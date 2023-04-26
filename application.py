@@ -228,9 +228,14 @@ parser.add_argument('-s', '--server', help='Starts a server', action='store_true
 parser.add_argument('-c', '--client', help='Starts a client', action='store_true')
 parser.add_argument('-p', '--port', help='Choose port number', type=valid_port, default=8088)
 parser.add_argument('-i', '--ipaddress', help='Choose an IP address for connection', type=valid_ip, default='127.0.0.1')
+parser.add_argument('-r', '--reliability', help='Choose a reliability function to use for connection')
 
 # Parsing the arguments that we just took in
 args = parser.parse_args()
+
+if not args.reliability:
+    print("Choose a reliability function to use")
+    sys.exit()
 
 # Cannot start the program with these arguments at the same time
 if args.server and args.client:
