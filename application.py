@@ -7,8 +7,6 @@ import time
 
 
 
-
-
 from struct import *
 
 # I integer (unsigned long) = 4bytes and H (unsigned short integer 2 bytes)
@@ -108,6 +106,7 @@ print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 # now let's parse the flag field
 syn, ack, fin = parse_flags(flags)
 print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
+
 
 
 
