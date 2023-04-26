@@ -74,37 +74,6 @@ def client():
     msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
     clientSocket.sendto(msg, (serverName, serverPort))
 
-    """
-    with open(args.file, 'rb') as f:
-        f_contents = f.read()
-
-    chunk_size = 1460
-
-    chunks = [f_contents[i:i+chunk_size] for i in range(0, len(f_contents), chunk_size)]
-
-    if args.reliability == "SAW":
-        for i, chunk in enumerate(chunks):
-            sequence_number = i
-            acknowledgement_number = 0
-            window = 0
-            flags = 0
-            data = chunk
-
-            msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
-            print(f'seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
-            clientSocket.sendto(msg, (serverName, serverPort))
-    
-
-        sequence_number = 0
-        acknowledgement_number = 0
-        window = 0
-        flags = 2
-        data = b''
-
-        msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
-        clientSocket.sendto(msg, (serverName, serverPort))
-        """
-
 
 def handshake_client(serverName, serverPort, clientSocket):
     sequence_number = 0
