@@ -50,6 +50,9 @@ def client():
 
     handshake_client(serverName, serverPort, clientSocket)
 
+    f = open(args.file)
+    data = f.read()
+
     with open(args.file, 'rb') as f:
         f_contents = f.read()
 
@@ -66,6 +69,7 @@ def client():
             data = chunk
 
             msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+            print(f'seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
             clientSocket.sendto(msg, (serverName, serverPort))
 
         sequence_number = 0
@@ -76,32 +80,6 @@ def client():
 
         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
         clientSocket.sendto(msg, (serverName, serverPort))
-
-    """
-    text = 'hello'.encode('utf-8')
-    data = text + b'0' * (1460 - len(text))
-
-    sequence_number = 1
-    acknowledgment_number = 0
-    window = 0  # window value should always be sent from the receiver-side
-    flags = 0  # we are not going to set any flags when we send a data packet
-
-    # msg now holds a packet, including our custom header and data
-    msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
-
-    addr = (serverName, serverPort)
-    clientSocket.sendto(msg, addr)
-
-    msg = clientSocket.recv(12)
-
-    # let's parse the header
-    seq, ack, flags, win = parse_header(msg)  # it's an ack message with only the header
-    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-
-    # now let's parse the flag field
-    syn, ack, fin = parse_flags(flags)
-    print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
-    """
 
 
 def handshake_client(serverName, serverPort, clientSocket):
@@ -157,7 +135,6 @@ def server():
                 header_from_msg = receiveMessage[:12]
                 seq, ack, flags, win = parse_header(header_from_msg)
                 print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-                print(receiveMessage[12:])
                 syn, ack, fin = parse_flags(flags)
                 if fin == 2:
                     break
@@ -165,10 +142,13 @@ def server():
                     received_chunks[order - 1] = receiveMessage[12:]
                     order += 1
 
+            """
             new_file = b''.join(received_chunks.values())
+            print(received_chunks)
+            """
 
-            with open('new_image.jpg', 'wb') as f:
-                f.write(new_file)
+            with open('new_image.txt', 'wb') as f:
+                f.write(bytes(received_chunks))
         """
         try:
             # Try to receive packet
