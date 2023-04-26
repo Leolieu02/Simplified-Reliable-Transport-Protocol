@@ -195,7 +195,7 @@ def handshake_server(serverSocket, serverPort):
     print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
     if ack == 4:
         print("Connection established with client")
-        print("----------------------------------")
+        print("-----------------------------------")
 
 
 # Description:
