@@ -1,13 +1,8 @@
 import argparse
-import math
+from struct import *
 import sys
 import ipaddress
 from socket import *
-import time
-
-
-
-from struct import *
 
 # I integer (unsigned long) = 4bytes and H (unsigned short integer 2 bytes)
 # see the struct official page for more info
