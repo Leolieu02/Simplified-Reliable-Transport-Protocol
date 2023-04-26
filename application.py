@@ -34,6 +34,7 @@ def valid_port(port):
         raise argparse.ArgumentTypeError('Invalid port')
     return value
 
+
 # Method that takes in the arguments and parses them, so we can take out the values
 parser = argparse.ArgumentParser(description='Simplified version of Iperf method in Mininet', epilog='End of help')
 
@@ -42,3 +43,11 @@ parser.add_argument('-s', '--server', help='Starts a server', action='store_true
 parser.add_argument('-c', '--client', help='Starts a client', action='store_true')
 parser.add_argument('-p', '--port', help='Choose port number', type=valid_port, default=8088)
 parser.add_argument('-i', '--ipaddress', help='Choose an IP address for connection', type=valid_ip, default='127.0.0.1')
+
+# Parsing the arguments that we just took in
+args = parser.parse_args()
+
+# Cannot start the program with these arguments at the same time
+if args.server and args.client:
+    print('Error message: Cannot start both client and server at the same time')
+    sys.exit()
