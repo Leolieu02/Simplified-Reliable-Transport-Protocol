@@ -133,28 +133,6 @@ def server():
                     break
             f.close()
             serverSocket.close()
-            """
-            received_chunks = {}
-            order = 1
-
-            while True:
-                receiveMessage, client_address = serverSocket.recvfrom(1472)
-                header_from_msg = receiveMessage[:12]
-                seq, ack, flags, win = parse_header(header_from_msg)
-                print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-                syn, ack, fin = parse_flags(flags)
-                if fin == 2:
-                    break
-                elif seq == order:
-                    received_chunks[order - 1] = receiveMessage[12:]
-                    order += 1
-
-            new_file = b''.join(received_chunks.values())
-            print(received_chunks)
-
-            with open('new_image.txt', 'wb') as f:
-                f.write(new_file)
-            """
 
     except ConnectionError:
         print("Connection error")
