@@ -125,7 +125,12 @@ def server():
             while data:
                 f.write(data[12:])
                 data, addr = serverSocket.recvfrom(1472)
+                seq, ack, flags, win = parse_header(data[:12])
+                syn, ack, fin = parse_flags(flags)
+                if fin == 2:
+                    break
             f.close()
+            serverSocket.close()
             """
             received_chunks = {}
             order = 1
