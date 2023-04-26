@@ -50,6 +50,33 @@ def client():
 
     handshake_client(serverName, serverPort, clientSocket)
 
+    with open(args.file, 'rb') as f:
+        f_contents = f.read()
+
+    chunk_size = 1460
+
+    chunks = [f_contents[i:i+chunk_size] for i in range(0, len(f_contents), chunk_size)]
+
+    if args.reliability == "SAW":
+        for i, chunk in enumerate(chunks):
+            sequence_number = i
+            acknowledgement_number = 0
+            window = 0
+            flags = 0
+            data = chunk
+
+            msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+            clientSocket.sendto(msg, (serverName, serverPort))
+
+        sequence_number = 0
+        acknowledgement_number = 0
+        window = 0
+        flags = 2
+        data = b''
+
+        msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+        clientSocket.sendto(msg, (serverName, serverPort))
+
     """
     text = 'hello'.encode('utf-8')
     data = text + b'0' * (1460 - len(text))
@@ -120,6 +147,28 @@ def server():
         serverPort = args.port
         # Bind with client
         handshake_server(serverSocket, serverPort)
+
+        if args.reliability == "SAW":
+            received_chunks = {}
+            order = 1
+
+            while True:
+                receiveMessage, client_address = serverSocket.recvfrom(1472)
+                header_from_msg = receiveMessage[:12]
+                seq, ack, flags, win = parse_header(header_from_msg)
+                print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                print(receiveMessage[12:])
+                syn, ack, fin = parse_flags(flags)
+                if fin == 2:
+                    break
+                elif seq == order:
+                    received_chunks[order - 1] = receiveMessage[12:]
+                    order += 1
+
+            new_file = b''.join(received_chunks.values())
+
+            with open('new_image.jpg', 'wb') as f:
+                f.write(new_file)
         """
         try:
             # Try to receive packet
@@ -229,6 +278,7 @@ parser.add_argument('-c', '--client', help='Starts a client', action='store_true
 parser.add_argument('-p', '--port', help='Choose port number', type=valid_port, default=8088)
 parser.add_argument('-i', '--ipaddress', help='Choose an IP address for connection', type=valid_ip, default='127.0.0.1')
 parser.add_argument('-r', '--reliability', help='Choose a reliability function to use for connection')
+parser.add_argument('-f', '--file', help='Choose a file to send')
 
 # Parsing the arguments that we just took in
 args = parser.parse_args()
