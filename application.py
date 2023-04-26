@@ -50,9 +50,31 @@ def client():
 
     handshake_client(serverName, serverPort, clientSocket)
 
-    f = open(args.file)
-    data = f.read()
+    f = open(args.file, "rb")
+    data = f.read(1460)
+    i = 1
+    while data:
+        sequence_number = i
+        acknowledgement_number = 0
+        window = 0
+        flags = 0
 
+        msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+        print(f'seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
+        clientSocket.sendto(msg, (serverName, serverPort))
+        data = f.read(1460)
+    f.close()
+
+    sequence_number = 0
+    acknowledgement_number = 0
+    window = 0
+    flags = 2
+    data = b''
+
+    msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+    clientSocket.sendto(msg, (serverName, serverPort))
+
+    """
     with open(args.file, 'rb') as f:
         f_contents = f.read()
 
@@ -71,6 +93,7 @@ def client():
             msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
             print(f'seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
             clientSocket.sendto(msg, (serverName, serverPort))
+    
 
         sequence_number = 0
         acknowledgement_number = 0
@@ -80,6 +103,7 @@ def client():
 
         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
         clientSocket.sendto(msg, (serverName, serverPort))
+        """
 
 
 def handshake_client(serverName, serverPort, clientSocket):
@@ -127,6 +151,13 @@ def server():
         handshake_server(serverSocket, serverPort)
 
         if args.reliability == "SAW":
+            data, addr = serverSocket.recvfrom(1472)
+            f = open('new_file.jpg', 'wb')
+            while data:
+                f.write(data[12:])
+                data, addr = serverSocket.recvfrom(1472)
+            f.close()
+            """
             received_chunks = {}
             order = 1
 
@@ -142,50 +173,13 @@ def server():
                     received_chunks[order - 1] = receiveMessage[12:]
                     order += 1
 
-            """
             new_file = b''.join(received_chunks.values())
             print(received_chunks)
-            """
 
             with open('new_image.txt', 'wb') as f:
-                f.write(bytes(received_chunks))
-        """
-        try:
-            # Try to receive packet
-            receiveMessage, client_address = serverSocket.recvfrom(1472)
-            header_from_msg = receiveMessage[:12]
-            seq, ack, flags, win = parse_header(header_from_msg)
-            print(f'seq={seq}, ack={ack}, flags={flags}, recevier-window={win}')
-            message = receiveMessage.replace(b'0', b'').decode('utf-8')
-            print("Packet size: " + str(len(message)))
-            print("Data size: " + str(len(message[12:])))
-            print("This is the message: " + message)
-            print("")
-            print("----------------------------------")
-            print("")
+                f.write(new_file)
+            """
 
-            try:
-                # Send ack back to client
-
-                # Set the right values
-                sequence_number = 0
-                acknowledgment_number = 1  # an ack for the last sequence
-                window = 0 # window value should always be sent from the receiver-side
-                flags = 4
-                data = b''
-
-                # Create packet to send
-                msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
-                print (f'this is an acknowledgment packet of header size={len(msg)}')
-
-                # Send ack back to client
-                serverSocket.sendto(msg, client_address)
-            except ChildProcessError:
-                print("Error in sending back the ack")
-
-        except ConnectionError:
-            print("Cannot receive packet")
-        """
     except ConnectionError:
         print("Connection error")
 
