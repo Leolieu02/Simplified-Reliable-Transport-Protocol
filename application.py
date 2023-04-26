@@ -63,6 +63,7 @@ def client():
         print(f'seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
         clientSocket.sendto(msg, (serverName, serverPort))
         data = f.read(1460)
+        i += 1
     f.close()
 
     sequence_number = 0
@@ -98,6 +99,7 @@ def handshake_client(serverName, serverPort, clientSocket):
     print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
     if syn == 8 and ack == 4:
         print("Connection established with server")
+        print("----------------------------------")
         sequence_number = 0
         acknowledgment_number = 0
         window = 0
@@ -186,6 +188,7 @@ def handshake_server(serverSocket, serverPort):
     print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
     if ack == 4:
         print("Connection established with client")
+        print("----------------------------------")
 
 
 # Description:
