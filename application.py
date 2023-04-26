@@ -72,6 +72,55 @@ def client():
     syn, ack, fin = parse_flags(flags)
     print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
 
+def server():
+    try:
+        # Create a socket
+        serverSocket = socket(AF_INET, SOCK_DGRAM)
+        serverPort = 8088
+        # Bind with client
+        serverSocket.bind(('', serverPort))
+        header_format = '!IIHH'
+        print("Server ready for connection")
+
+        try:
+            # Try to receive packet
+            receiveMessage, client_address = serverSocket.recvfrom(1472)
+            header_from_msg = receiveMessage[:12]
+            seq, ack, flags, win = parse_header(header_from_msg)
+            print(f'seq={seq}, ack={ack}, flags={flags}, recevier-window={win}')
+            message = receiveMessage.replace(b'0', b'').decode('utf-8')
+            print("Packet size: " + str(len(message)))
+            print("Data size: " + str(len(message[12:])))
+            print("This is the message: " + message)
+            print("")
+            print("----------------------------------")
+            print("")
+
+            try:
+                # Send ack back to client
+
+                # Set the right values
+                sequence_number = 0
+                acknowledgment_number = 1  # an ack for the last sequence
+                window = 0 # window value should always be sent from the receiver-side
+                flags = 4
+                data = b''
+
+                # Create packet to send
+                msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                print (f'this is an acknowledgment packet of header size={len(msg)}')
+
+                # Send ack back to client
+                serverSocket.sendto(msg, client_address)
+            except ChildProcessError:
+                print("Error in sending back the ack")
+
+        except ConnectionError:
+            print("Cannot receive packet")
+
+    except ConnectionError:
+        print("Connection error")
+
 
 # Description:
 # Function that checks ip address number is valid, returns ip address
@@ -125,3 +174,6 @@ if not args.server and not args.client:
 
 elif args.client:
     client()
+
+elif args.server:
+    server()
