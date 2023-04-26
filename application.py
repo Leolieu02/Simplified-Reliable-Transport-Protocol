@@ -113,25 +113,6 @@ print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Description:
 # Function that checks ip address number is valid, returns ip address
 # Arguments:
@@ -176,4 +157,8 @@ args = parser.parse_args()
 # Cannot start the program with these arguments at the same time
 if args.server and args.client:
     print('Error message: Cannot start both client and server at the same time')
+    sys.exit()
+
+if not args.server and not args.client:
+    print("You must run either in server or client mode")
     sys.exit()
