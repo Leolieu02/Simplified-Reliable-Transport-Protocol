@@ -71,7 +71,9 @@ def client():
                     seq, ack, flags, win = parse_header(ack[:12])
                     if ack == sequence_number:
                         ack_wait = False
-                except TimeoutError:
+                    elif ack != sequence_number:  # If you get wrong ack number
+                        clientSocket.sendto(msg, (serverName, serverPort))  # Resend packet
+                except TimeoutError:  # If timer runs out, resend (timeout resend)
                     ack_wait = True
                     clientSocket.sendto(msg, (serverName, serverPort))  # Resend packet
 
