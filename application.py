@@ -37,12 +37,8 @@ def valid_port(port):
 # Method that takes in the arguments and parses them, so we can take out the values
 parser = argparse.ArgumentParser(description='Simplified version of Iperf method in Mininet', epilog='End of help')
 
-# Arguments for server
+# Arguments for server and client
 parser.add_argument('-s', '--server', help='Starts a server', action='store_true')
-parser.add_argument('-b', '--bind', help='Choose IP address', type=valid_ip, default='0.0.0.0')
-parser.add_argument('-p', '--port', help='Choose port number', type=valid_port, default=8088)
-
-
-# Arguments for client
 parser.add_argument('-c', '--client', help='Starts a client', action='store_true')
-parser.add_argument('-I', '--serverip', help='Choose IP address for client', type=valid_ip, default='0.0.0.0')
+parser.add_argument('-p', '--port', help='Choose port number', type=valid_port, default=8088)
+parser.add_argument('-i', '--ipaddress', help='Choose an IP address for connection', type=valid_ip, default='127.0.0.1')
