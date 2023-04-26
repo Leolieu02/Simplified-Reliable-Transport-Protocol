@@ -50,31 +50,31 @@ def client():
 
     handshake_client(serverName, serverPort, clientSocket)
 
-    f = open(args.file, "rb")
-    data = f.read(1460)
-    i = 1
-    while data:
-        sequence_number = i
+    if args.reliability == "SAW":
+        f = open(args.file, "rb")
+        data = f.read(1460)
+        i = 1
+        while data:
+            sequence_number = i
+            acknowledgement_number = 0
+            window = 0
+            flags = 0
+
+            msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+            print(f'seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
+            clientSocket.sendto(msg, (serverName, serverPort))
+            data = f.read(1460)
+            i += 1
+        f.close()
+
+        sequence_number = 0
         acknowledgement_number = 0
         window = 0
-        flags = 0
+        flags = 2
+        data = b''
 
         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
-        print(f'seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
         clientSocket.sendto(msg, (serverName, serverPort))
-        data = f.read(1460)
-        i += 1
-    f.close()
-
-    sequence_number = 0
-    acknowledgement_number = 0
-    window = 0
-    flags = 2
-    data = b''
-
-    msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
-    clientSocket.sendto(msg, (serverName, serverPort))
-
 
 def handshake_client(serverName, serverPort, clientSocket):
     sequence_number = 0
