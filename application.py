@@ -48,69 +48,34 @@ def parse_flags(flags):
     return syn, ack, fin
 
 
-# now let's create a packet with sequence number 1
-print('\n\ncreating a packet')
+def client():
+    serverName = '127.0.0.1'
+    serverPort = 8088
+    clientSocket = socket(AF_INET, SOCK_DGRAM)
 
-data = b'0' * 1460
-print(f'app data for size ={len(data)}')
+    text = 'hello'.encode('utf-8')
+    data = text + b'0' * (1460 - len(text))
 
-sequence_number = 1
-acknowledgment_number = 0
-window = 0  # window value should always be sent from the receiver-side
-flags = 0  # we are not going to set any flags when we send a data packet
+    sequence_number = 1
+    acknowledgment_number = 0
+    window = 0  # window value should always be sent from the receiver-side
+    flags = 0  # we are not going to set any flags when we send a data packet
 
-# msg now holds a packet, including our custom header and data
-msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+    # msg now holds a packet, including our custom header and data
+    msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
 
-# now let's look at the header
-# we already know that the header is in the first 12 bytes
+    addr = ('127.0.0.1', 8088)
+    clientSocket.sendto(msg, addr)
 
-header_from_msg = msg[:12]
-print(len(header_from_msg))
+    msg = clientSocket.recv(12)
 
-# now we get the header from the parse_header function
-# which unpacks the values based on the header_format that
-# we specified
-seq, ack, flags, win = parse_header(header_from_msg)
-print(f'seq={seq}, ack={ack}, flags={flags}, recevier-window={win}')
+    # let's parse the header
+    seq, ack, flags, win = parse_header(msg)  # it's an ack message with only the header
+    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
-# let's extract the data_from_msg that holds
-# the application data of 1460 bytes
-data_from_msg = msg[12:]
-print(len(data_from_msg))
-
-# let's mimic an acknowledgment packet from the receiver-end
-# now let's create a packet with acknowledgement number 1
-# an acknowledgment packet from the receiver should have no data
-# only the header with acknowledgment number, ack_flag=1, win=6400
-data = b''
-print('\n\nCreating an acknowledgment packet:')
-print(f'this is an empty packet with no data ={len(data)}')
-
-sequence_number = 0
-acknowledgment_number = 1  # an ack for the last sequnce
-window = 0  # window value should always be sent from the receiver-side
-
-# let's look at the last 4 bits:  S A F R
-# 0 0 0 0 represents no flags
-# 0 1 0 0  ack flag set, and the decimal equivalent is 4
-flags = 4
-
-msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
-print(f'this is an acknowledgment packet of header size={len(msg)}')
-
-# let's parse the header
-seq, ack, flags, win = parse_header(msg)  # it's an ack message with only the header
-print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-
-# now let's parse the flag field
-syn, ack, fin = parse_flags(flags)
-print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
-
-
-
-
-
+    # now let's parse the flag field
+    syn, ack, fin = parse_flags(flags)
+    print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
 
 
 # Description:
@@ -162,3 +127,6 @@ if args.server and args.client:
 if not args.server and not args.client:
     print("You must run either in server or client mode")
     sys.exit()
+
+elif args.client:
+    client()
