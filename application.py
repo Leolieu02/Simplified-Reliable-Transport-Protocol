@@ -48,6 +48,9 @@ def client():
     serverPort = args.port
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
+    handshake_client(serverName, serverPort, clientSocket)
+
+    """
     text = 'hello'.encode('utf-8')
     data = text + b'0' * (1460 - len(text))
 
@@ -71,6 +74,44 @@ def client():
     # now let's parse the flag field
     syn, ack, fin = parse_flags(flags)
     print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
+    """
+
+
+def handshake_client(serverName, serverPort, clientSocket):
+    sequence_number = 0
+    acknowledgment_number = 0
+    window = 0
+    flags = 8
+
+    data = b''
+
+    msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+
+    addr = (serverName, serverPort)
+    clientSocket.sendto(msg, addr)
+
+    ack = clientSocket.recv(12)
+
+    header_from_ack = ack[:12]
+
+    seq, ack, flags, win = parse_header(header_from_ack)
+    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+    syn, ack, fin = parse_flags(flags)
+    print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
+    if syn == 8 and ack == 4:
+        print("Connection established with server")
+        sequence_number = 0
+        acknowledgment_number = 0
+        window = 0
+        flags = 4
+
+        data = b''
+
+        msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+
+        addr = (serverName, serverPort)
+        clientSocket.sendto(msg, addr)
+
 
 def server():
     try:
@@ -78,9 +119,8 @@ def server():
         serverSocket = socket(AF_INET, SOCK_DGRAM)
         serverPort = args.port
         # Bind with client
-        serverSocket.bind(('', serverPort))
-        print("Server ready for connection")
-
+        handshake_server(serverSocket, serverPort)
+        """
         try:
             # Try to receive packet
             receiveMessage, client_address = serverSocket.recvfrom(1472)
@@ -116,9 +156,39 @@ def server():
 
         except ConnectionError:
             print("Cannot receive packet")
-
+        """
     except ConnectionError:
         print("Connection error")
+
+
+def handshake_server(serverSocket, serverPort):
+    serverSocket.bind(('', serverPort))
+    receiveMessage, client_address = serverSocket.recvfrom(12)
+    header_from_receive = receiveMessage[:12]
+    seq, ack, flags, win = parse_header(header_from_receive)
+    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+    syn, ack, fin = parse_flags(flags)
+    print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
+    if syn == 8:
+        sequence_number = 0
+        acknowledgment_number = 0
+        window = 0
+        flags = 12
+        data = b''
+
+        msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+        serverSocket.sendto(msg, client_address)
+    else:
+        print("Did not receive syn and ack")
+        sys.exit()
+
+    last_ack = serverSocket.recv(12)
+    seq, ack, flags, win = parse_header(last_ack)
+    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+    syn, ack, fin = parse_flags(flags)
+    print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
+    if ack == 4:
+        print("Connection established with client")
 
 
 # Description:
