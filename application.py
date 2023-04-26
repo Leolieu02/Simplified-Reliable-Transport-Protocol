@@ -44,8 +44,8 @@ def parse_flags(flags):
 
 
 def client():
-    serverName = '127.0.0.1'
-    serverPort = 8088
+    serverName = args.ipaddress
+    serverPort = args.port
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
     text = 'hello'.encode('utf-8')
@@ -59,7 +59,7 @@ def client():
     # msg now holds a packet, including our custom header and data
     msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
 
-    addr = ('127.0.0.1', 8088)
+    addr = (serverName, serverPort)
     clientSocket.sendto(msg, addr)
 
     msg = clientSocket.recv(12)
@@ -76,10 +76,9 @@ def server():
     try:
         # Create a socket
         serverSocket = socket(AF_INET, SOCK_DGRAM)
-        serverPort = 8088
+        serverPort = args.port
         # Bind with client
         serverSocket.bind(('', serverPort))
-        header_format = '!IIHH'
         print("Server ready for connection")
 
         try:
