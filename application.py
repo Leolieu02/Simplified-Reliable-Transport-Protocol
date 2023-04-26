@@ -63,8 +63,21 @@ def client():
             msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
             print(f'seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
             clientSocket.sendto(msg, (serverName, serverPort))
+            ack_wait = True
+            while ack_wait:
+                try:
+                    clientSocket.settimeout(0.5)
+                    ack = clientSocket.recv(12)
+                    seq, ack, flags, win = parse_header(ack[:12])
+                    if ack == sequence_number:
+                        ack_wait = False
+                except TimeoutError:
+                    ack_wait = True
+                    clientSocket.sendto(msg, (serverName, serverPort))  # Resend packet
+
             data = f.read(1460)
             i += 1
+
         f.close()
 
         sequence_number = 0
@@ -75,6 +88,7 @@ def client():
 
         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
         clientSocket.sendto(msg, (serverName, serverPort))
+
 
 def handshake_client(serverName, serverPort, clientSocket):
     sequence_number = 0
@@ -124,15 +138,28 @@ def server():
         if args.reliability == "SAW":
             data, addr = serverSocket.recvfrom(1472)
             f = open('new_file.jpg', 'wb')
+            counter = 1
             while data:
-                f.write(data[12:])
-                data, addr = serverSocket.recvfrom(1472)
                 seq, ack, flags, win = parse_header(data[:12])
                 syn, ack, fin = parse_flags(flags)
                 if fin == 2:
                     break
+                if seq == counter:
+                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                    sequence_number = 0
+                    acknowledgment_number = counter
+                    window = 0
+                    flags = 4
+                    f.write(data[12:])
+                    data = b''
+
+                    ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                    serverSocket.sendto(ack, addr)
+                if seq != counter:
+                    print("Not the right packet received")
+                data, addr = serverSocket.recvfrom(1472)
+                counter += 1
             f.close()
-            serverSocket.close()
 
     except ConnectionError:
         print("Connection error")
