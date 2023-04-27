@@ -117,12 +117,12 @@ def client():
 
         while data:
             #  Sends the whole sender window
-            for i in range (len(sender_window)):
+            for i in range(len(sender_window)):
                 clientSocket.sendto(sender_window[i], (serverName, serverPort))
 
             #  Receives acks from server, puts in array
             ack_window = []
-            for i in range (args.window):
+            for i in range(args.window):
                 try:
                     clientSocket.settimeout(0.5)
                     ack = clientSocket.recv(12)
@@ -153,6 +153,20 @@ def client():
 
                 elif seq != ack_ack:
                     break
+
+        # Create fin
+        sequence_number = 0
+        acknowledgement_number = 0
+        window = 0
+        flags = 2
+        data = b''
+
+        msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+        clientSocket.sendto(msg, (serverName, serverPort))
+
+        f.close()
+        clientSocket.close()
+
 
 def handshake_client(serverName, serverPort, clientSocket):
     sequence_number = 0
@@ -228,6 +242,51 @@ def server():
                 data, addr = serverSocket.recvfrom(1472)
                 counter += 1
             f.close()
+
+        if args.reliability == "GBN":
+            print("Using the Go Back N approach....")
+            print("----------------------------------")  # And sent back an ack to receiver
+
+            receiver_window = []
+            ack_window = []
+            f = open('new_file.jpg', 'wb')
+            tracker = 1
+            addr = ()
+            dataCheck = True
+
+            while dataCheck:
+                receiver_window = []
+                for i in range(args.window):
+                    data, addr = serverSocket.recvfrom(1472)
+                    receiver_window.append(data)
+
+                for i in range(len(receiver_window)):
+                    data = receiver_window[i]
+                    seq, ack, flags, win = parse_header(data[:12])
+                    syn, ack, fin = parse_flags(flags)
+                    print(fin)
+
+                    if fin != 0:
+                        dataCheck = False
+                        print("If fin != 0")
+                        break
+
+                    if seq == tracker:
+                        f.write(data[12:])
+                        tracker += 1
+
+                    # Create ack
+                    sequence_number = 0
+                    acknowledgment_number = seq
+                    flags = 4
+                    window = 0
+                    data = b''
+
+                    ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                    serverSocket.sendto(ack, addr)
+
+            f.close()
+            serverSocket.close()
 
     except ConnectionError:
         print("Connection error")
