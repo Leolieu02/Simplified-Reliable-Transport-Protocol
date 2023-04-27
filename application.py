@@ -84,8 +84,6 @@ def client():
             data = f.read(1460)
             i += 1
 
-        f.close()
-
         sequence_number = 0
         acknowledgement_number = 0
         window = 0
@@ -94,6 +92,11 @@ def client():
 
         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
         clientSocket.sendto(msg, (serverName, serverPort))
+
+        f.close()
+        clientSocket.close()
+        print("----------------------------")
+        print("Connection gracefully closed")
 
     if args.reliability == "GBN":
         print("Using the Go Back N approach....")
@@ -171,6 +174,8 @@ def client():
 
         f.close()
         clientSocket.close()
+        print("----------------------------")
+        print("Connection gracefully closed")
 
 
 def handshake_client(serverName, serverPort, clientSocket):
@@ -246,6 +251,8 @@ def server():
                     print("Not the right packet received")
                 data, addr = serverSocket.recvfrom(1472)
                 counter += 1
+            print("----------------------------")
+            print("Connection gracefully closed")
             f.close()
 
         if args.reliability == "GBN":
@@ -265,6 +272,10 @@ def server():
                     data, addr = serverSocket.recvfrom(1472)
                     seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                    syn, ack, fin = parse_flags(flags)
+                    if fin == 2:
+                        dataCheck = False
+                        break
                     receiver_window.append(data)
 
                 for i in range(len(receiver_window)):
@@ -272,11 +283,6 @@ def server():
                     seq, ack, flags, win = parse_header(data[:12])
                     syn, ack, fin = parse_flags(flags)
                     print(fin)
-
-                    if fin != 0:
-                        dataCheck = False
-                        print("If fin != 0")
-                        serverSocket.close()
 
                     if seq == tracker:
                         f.write(data[12:])
@@ -296,6 +302,8 @@ def server():
 
             f.close()
             serverSocket.close()
+            print("----------------------------")
+            print("Connection gracefully closed")
 
     except ConnectionError:
         print("Connection error")
