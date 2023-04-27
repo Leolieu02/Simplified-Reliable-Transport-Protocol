@@ -114,6 +114,8 @@ def client():
 
             msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
             sender_window.append(msg)
+            seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
+            print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
         while data:
             #  Sends the whole sender window
@@ -131,12 +133,15 @@ def client():
                     break
 
             #   Compares acks and seq and updates sender window
-            for i in range (len(ack_window)):
+            for i in range(5):
                 ack = ack_window[i]
-                message = sender_window[i]
+                message = sender_window[0]
 
                 ack_seq, ack_ack, ack_flags, ack_win = parse_header(ack[:12])
                 seq, ack, flags, win = parse_header(message[:12])
+
+                print("Seq " + str(seq))
+                print("Ack " + str(ack_ack))
 
                 if seq == ack_ack:
                     data = f.read(1460)
@@ -258,6 +263,8 @@ def server():
                 receiver_window = []
                 for i in range(args.window):
                     data, addr = serverSocket.recvfrom(1472)
+                    seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
+                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                     receiver_window.append(data)
 
                 for i in range(len(receiver_window)):
@@ -269,7 +276,7 @@ def server():
                     if fin != 0:
                         dataCheck = False
                         print("If fin != 0")
-                        break
+                        serverSocket.close()
 
                     if seq == tracker:
                         f.write(data[12:])
@@ -284,6 +291,8 @@ def server():
 
                     ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
                     serverSocket.sendto(ack, addr)
+                    seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
+                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
             f.close()
             serverSocket.close()
