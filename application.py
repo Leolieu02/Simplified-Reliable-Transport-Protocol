@@ -1,4 +1,5 @@
 import argparse
+import time
 from struct import *
 import sys
 import ipaddress
@@ -51,6 +52,9 @@ def client():
     handshake_client(serverName, serverPort, clientSocket)
 
     if args.reliability == "SAW":
+        print("Using the Stop and Wait method....")
+        print("----------------------------------")  # And sent back an ack to receiver
+
         f = open(args.file, "rb")
         data = f.read(1460)
         i = 1
@@ -114,8 +118,6 @@ def handshake_client(serverName, serverPort, clientSocket):
     syn, ack, fin = parse_flags(flags)
     print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
     if syn == 8 and ack == 4:
-        print("Connection established with server")
-        print("----------------------------------")
         sequence_number = 0
         acknowledgment_number = 0
         window = 0
@@ -128,6 +130,9 @@ def handshake_client(serverName, serverPort, clientSocket):
         addr = (serverName, serverPort)
         clientSocket.sendto(msg, addr)
 
+        print("Connection established with server")
+        print("----------------------------------")  # And sent back an ack to receiver
+
 
 def server():
     try:
@@ -138,6 +143,9 @@ def server():
         handshake_server(serverSocket, serverPort)
 
         if args.reliability == "SAW":
+            print("Using the Stop and Wait method....")
+            print("----------------------------------")  # And sent back an ack to receiver
+
             data, addr = serverSocket.recvfrom(1472)
             f = open('new_file.jpg', 'wb')
             counter = 1
