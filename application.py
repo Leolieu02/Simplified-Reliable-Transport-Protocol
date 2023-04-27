@@ -53,7 +53,7 @@ def client():
 
     if args.reliability == "SAW":
         print("Using the Stop and Wait method....")
-        print("----------------------------------")  # And sent back an ack to receiver
+        print("----------------------------------")
 
         f = open(args.file, "rb")
         data = f.read(1460)
@@ -95,6 +95,64 @@ def client():
         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
         clientSocket.sendto(msg, (serverName, serverPort))
 
+    if args.reliability == "GBN":
+        print("Using the Go Back N approach....")
+        print("----------------------------------")
+
+        f = open(args.file, "rb")
+        sender_window = []
+        ack_window = []
+        counter = 1
+        data = 0
+        for i in range (args.window):
+            data = f.read(1460)
+            sequence_number = counter
+            acknowledgement_number = 0
+            flags = 0
+            window = 0
+            counter += 1
+
+            msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+            sender_window.append(msg)
+
+        while data:
+            #  Sends the whole sender window
+            for i in range (len(sender_window)):
+                clientSocket.sendto(sender_window[i], (serverName, serverPort))
+
+            #  Receives acks from server, puts in array
+            ack_window = []
+            for i in range (args.window):
+                try:
+                    clientSocket.settimeout(0.5)
+                    ack = clientSocket.recv(12)
+                    ack_window.append(ack)
+                except TimeoutError:
+                    break
+
+            #   Compares acks and seq and updates sender window
+            for i in range (len(ack_window)):
+                ack = ack_window[i]
+                message = sender_window[i]
+
+                ack_seq, ack_ack, ack_flags, ack_win = parse_header(ack[:12])
+                seq, ack, flags, win = parse_header(message[:12])
+
+                if seq == ack_ack:
+                    data = f.read(1460)
+                    sequence_number = counter
+                    acknowledgement_number = 0
+                    flags = 0
+                    window = 0
+                    counter += 1
+
+                    del sender_window[0]
+
+                    msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+                    sender_window.append(msg)
+
+                elif seq != ack_ack:
+                    break
 
 def handshake_client(serverName, serverPort, clientSocket):
     sequence_number = 0
@@ -245,6 +303,8 @@ parser.add_argument('-p', '--port', help='Choose port number', type=valid_port, 
 parser.add_argument('-i', '--ipaddress', help='Choose an IP address for connection', type=valid_ip, default='127.0.0.1')
 parser.add_argument('-r', '--reliability', help='Choose a reliability function to use for connection')
 parser.add_argument('-f', '--file', help='Choose a file to send')
+parser.add_argument('-w', '--window', help='Choose the window size (only for GBN or GBN-SR', default=5)
+
 
 # Parsing the arguments that we just took in
 args = parser.parse_args()
