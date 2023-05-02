@@ -189,7 +189,13 @@ def handshake_client(serverName, serverPort, clientSocket):
     msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
 
     addr = (serverName, serverPort)
-    clientSocket.sendto(msg, addr)
+
+    check = True
+    while check:
+        clientSocket.sendto(msg, addr)
+
+
+
 
     ack = clientSocket.recv(12)
 
@@ -247,10 +253,11 @@ def server():
 
                     ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
                     serverSocket.sendto(ack, addr)
+                    counter += 1
                 if seq != counter:
                     print("Not the right packet received")
                 data, addr = serverSocket.recvfrom(1472)
-                counter += 1
+                
             print("----------------------------")
             print("Connection gracefully closed")
             f.close()
