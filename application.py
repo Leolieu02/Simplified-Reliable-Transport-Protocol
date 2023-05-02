@@ -398,6 +398,7 @@ if args.server and args.client:
     print('Error message: Cannot start both client and server at the same time')
     sys.exit()
 
+# Must start program in either server or client-mode
 if not args.server and not args.client:
     print("You must run either in server or client mode")
     sys.exit()
