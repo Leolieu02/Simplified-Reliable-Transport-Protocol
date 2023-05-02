@@ -403,6 +403,7 @@ def server():
             tracker = 1
             addr = ()
             dataCheck = True
+            saved_buffer = []
 
             while dataCheck:
                 receiver_window = []
@@ -430,6 +431,21 @@ def server():
                         f.write(data[12:])
                         tracker += 1
 
+                    elif seq != tracker:
+                        print("Hallo?")
+                        saved_buffer.append(receiver_window[i])
+                        for j in range(len(saved_buffer)):
+                            data = saved_buffer[j]
+                            seq, ack, flags, win = parse_header(data[:12])
+                            syn, ack, fin = parse_flags(flags)
+
+                            if tracker == seq:
+                                f.write(data[12:])
+                                tracker += 1
+                                del saved_buffer[j]
+                                i -= 1
+                                print("Henter fra buffer")
+
                     # Create ack
                     sequence_number = 0
                     acknowledgment_number = seq
@@ -442,6 +458,7 @@ def server():
                     seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
+            print(len(saved_buffer))
             f.close()
             serverSocket.close()
             print("----------------------------")
