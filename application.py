@@ -107,7 +107,7 @@ def client():
         ack_window = []
         counter = 1
         data = 0
-        for i in range (args.window):
+        for i in range(int(args.window)):
             data = f.read(1460)
             sequence_number = counter
             acknowledgement_number = 0
@@ -127,7 +127,7 @@ def client():
 
             #  Receives acks from server, puts in array
             ack_window = []
-            for i in range(args.window):
+            for i in range(int(args.window)):
                 try:
                     clientSocket.settimeout(0.5)
                     ack = clientSocket.recv(12)
@@ -271,7 +271,7 @@ def server():
 
             while dataCheck:
                 receiver_window = []
-                for i in range(args.window):
+                for i in range(int(args.window)):
                     data, addr = serverSocket.recvfrom(1472)
                     seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
@@ -411,3 +411,9 @@ elif args.client:
 
 elif args.server:
     server()
+
+
+# Window size
+# Handshake
+# SR alone?
+# CheckWindowSize
