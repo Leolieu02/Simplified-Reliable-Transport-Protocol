@@ -284,6 +284,10 @@ def server():
                     syn, ack, fin = parse_flags(flags)
                     print(fin)
 
+                    # If expected sequence number, write to file
+                    # If a packet is skipped, the next packet will not be used to write to file
+                    # Even if the packet is wrong, the server will still send an ack so that the client understands which
+                    # packet went missing
                     if seq == tracker:
                         f.write(data[12:])
                         tracker += 1
