@@ -134,7 +134,7 @@ def client():
                     break
 
             #   Compares acks and seq and updates sender window
-            for i in range(5):
+            for i in range(len(ack_window)):
                 ack = ack_window[i]
                 message = sender_window[0]
 
