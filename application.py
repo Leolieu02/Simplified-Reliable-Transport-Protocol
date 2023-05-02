@@ -1,5 +1,4 @@
 import argparse
-import time
 from struct import *
 import sys
 import ipaddress
@@ -104,7 +103,6 @@ def client():
 
         f = open(args.file, "rb")
         sender_window = []
-        ack_window = []
         counter = 1
         data = 0
         for i in range(int(args.window)):
@@ -177,6 +175,90 @@ def client():
         print("----------------------------")
         print("Connection gracefully closed")
 
+    if args.reliability == "GBN-SR":
+        print("Using the Go Back N approach with selective repeat....")
+        print("----------------------------------")
+
+        f = open(args.file, "rb")
+        sender_window = []
+        counter = 1
+        data = 0
+        for i in range(int(args.window)):
+            data = f.read(1460)
+            sequence_number = counter
+            acknowledgement_number = 0
+            flags = 0
+            window = 0
+            counter += 1
+
+            msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+            sender_window.append(msg)
+            seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
+            print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+
+        while data:
+            #  Sends the whole sender window
+            for i in range(len(sender_window)):
+                clientSocket.sendto(sender_window[i], (serverName, serverPort))
+
+            #  Receives acks from server, puts in array
+            ack_window = []
+            new_window = []
+            for i in range(int(args.window)):
+                try:
+                    clientSocket.settimeout(0.5)
+                    ack = clientSocket.recv(12)
+                    ack_window.append(ack)
+                except TimeoutError:
+                    break
+
+            #   Compares acks and seq and updates sender window
+            for i in range(len(ack_window)):
+                for j in range(len(sender_window)):
+                    ack = ack_window[i]
+                    message = sender_window[j]
+
+                    ack_seq, ack_ack, ack_flags, ack_win = parse_header(ack[:12])
+                    seq, ack, flags, win = parse_header(message[:12])
+
+                    print("Seq " + str(seq))
+                    print("Ack " + str(ack_ack))
+
+                    if seq == ack_ack:
+                        data = f.read(1460)
+                        sequence_number = counter
+                        acknowledgement_number = 0
+                        flags = 0
+                        window = 0
+                        counter += 1
+
+                        del sender_window[j]
+
+                        msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+                        new_window.append(msg)
+
+                        # All the packets are sent, and we can start sending the new ones
+                        if not sender_window:
+                            sender_window = new_window
+                            break
+                        # The ack is in the sender window, breaking out, so we don't redundantly check the rest of the array
+                        break
+
+        # Create fin
+        sequence_number = 0
+        acknowledgement_number = 0
+        window = 0
+        flags = 2
+        data = b''
+
+        msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+        clientSocket.sendto(msg, (serverName, serverPort))
+
+        f.close()
+        clientSocket.close()
+        print("----------------------------")
+        print("Connection gracefully closed")
+
 
 def handshake_client(serverName, serverPort, clientSocket):
     sequence_number = 0
@@ -189,7 +271,6 @@ def handshake_client(serverName, serverPort, clientSocket):
     msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
 
     addr = (serverName, serverPort)
-
 
     clientSocket.sendto(msg, addr)
 
@@ -260,6 +341,60 @@ def server():
 
         if args.reliability == "GBN":
             print("Using the Go Back N approach....")
+            print("----------------------------------")  # And sent back an ack to receiver
+
+            receiver_window = []
+            ack_window = []
+            f = open('new_file.jpg', 'wb')
+            tracker = 1
+            addr = ()
+            dataCheck = True
+
+            while dataCheck:
+                receiver_window = []
+                for i in range(int(args.window)):
+                    data, addr = serverSocket.recvfrom(1472)
+                    seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
+                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                    syn, ack, fin = parse_flags(flags)
+                    if fin == 2:
+                        dataCheck = False
+                        break
+                    receiver_window.append(data)
+
+                for i in range(len(receiver_window)):
+                    data = receiver_window[i]
+                    seq, ack, flags, win = parse_header(data[:12])
+                    syn, ack, fin = parse_flags(flags)
+                    print(fin)
+
+                    # If expected sequence number, write to file
+                    # If a packet is skipped, the next packet will not be used to write to file
+                    # Even if the packet is wrong, the server will still send an ack so that the client understands which
+                    # packet went missing
+                    if seq == tracker:
+                        f.write(data[12:])
+                        tracker += 1
+
+                    # Create ack
+                    sequence_number = 0
+                    acknowledgment_number = seq
+                    flags = 4
+                    window = 0
+                    data = b''
+
+                    ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                    serverSocket.sendto(ack, addr)
+                    seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
+                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+
+            f.close()
+            serverSocket.close()
+            print("----------------------------")
+            print("Connection gracefully closed")
+
+        if args.reliability == "GBN-SR":
+            print("Using the Go Back N approach with selective repeat....")
             print("----------------------------------")  # And sent back an ack to receiver
 
             receiver_window = []
