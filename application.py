@@ -210,7 +210,7 @@ def client():
             print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
         while True:
-            if not data and not sender_window:
+            if not sender_window:
                 break
 
             #  Sends the whole sender window
@@ -247,6 +247,7 @@ def client():
                         del sender_window[0]
                         data = f.read(1460)
                         if not data:
+                            print("No more data")
                             break
                         sequence_number = counter
                         acknowledgement_number = 0
@@ -255,6 +256,7 @@ def client():
                         counter += 1
                         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
                         new_window.append(msg)
+                        print("Ny vindu er " + str(len(new_window)))
                         seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
                         print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                         break
@@ -264,11 +266,13 @@ def client():
                         del sender_window[0]
 
             if rest_window:
-                sender_window = rest_window
+                sender_window = rest_window.copy()
                 rest_window = []
             else:
-                sender_window = new_window
+                sender_window = new_window.copy()
                 new_window = []
+
+            print("Sender vindu er " + str(len(sender_window)))
 
         # Create fin
         sequence_number = 0
