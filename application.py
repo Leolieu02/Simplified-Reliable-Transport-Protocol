@@ -352,7 +352,7 @@ def server():
 
             receiver_window = []
             ack_window = []
-            f = open('new_file.txt', 'wb')
+            f = open('new_file.jpg', 'wb')
             tracker = 1
             addr = ()
             dataCheck = True
@@ -360,14 +360,18 @@ def server():
             while dataCheck:
                 receiver_window = []
                 for i in range(int(args.window)):
-                    data, addr = serverSocket.recvfrom(1472)
-                    seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
-                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-                    syn, ack, fin = parse_flags(flags)
-                    if fin == 2:
-                        dataCheck = False
+                    try:
+                        serverSocket.settimeout(0.5)
+                        data, addr = serverSocket.recvfrom(1472)
+                        seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
+                        print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                        syn, ack, fin = parse_flags(flags)
+                        if fin == 2:
+                            dataCheck = False
+                            break
+                        receiver_window.append(data)
+                    except TimeoutError:
                         break
-                    receiver_window.append(data)
 
                 for i in range(len(receiver_window)):
                     data = receiver_window[i]
