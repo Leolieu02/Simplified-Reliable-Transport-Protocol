@@ -107,6 +107,8 @@ def client():
         data = 0
         for i in range(int(args.window)):
             data = f.read(1460)
+            if not data:
+                break
             sequence_number = counter
             acknowledgement_number = 0
             flags = 0
@@ -118,14 +120,14 @@ def client():
             seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
             print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
-        while data:
+        while sender_window:
             #  Sends the whole sender window
             for i in range(len(sender_window)):
                 clientSocket.sendto(sender_window[i], (serverName, serverPort))
 
             #  Receives acks from server, puts in array
             ack_window = []
-            for i in range(int(args.window)):
+            for i in range(len(sender_window)):
                 try:
                     clientSocket.settimeout(0.5)
                     ack = clientSocket.recv(12)
@@ -134,7 +136,7 @@ def client():
                     break
 
             #   Compares acks and seq and updates sender window
-            for i in range(5):
+            for i in range(len(ack_window)):
                 ack = ack_window[i]
                 message = sender_window[0]
 
@@ -145,14 +147,16 @@ def client():
                 print("Ack " + str(ack_ack))
 
                 if seq == ack_ack:
+                    del sender_window[0]
+
                     data = f.read(1460)
+                    if not data:
+                        break
                     sequence_number = counter
                     acknowledgement_number = 0
                     flags = 0
                     window = 0
                     counter += 1
-
-                    del sender_window[0]
 
                     msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
                     sender_window.append(msg)
