@@ -97,7 +97,7 @@ def client():
         print("----------------------------")
         print("Connection gracefully closed")
 
-    if args.reliability == "GBN":
+    elif args.reliability == "GBN":
         print("Using the Go Back N approach....")
         print("----------------------------------")
 
@@ -121,7 +121,6 @@ def client():
             print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
         while True:
-
             if not data and not sender_window:
                 break
 
@@ -142,7 +141,8 @@ def client():
                     break
 
             #   Compares acks and seq and updates sender window
-            for i in range(len(ack_window)):
+            i = 0
+            while i < (len(ack_window)):
                 ack = ack_window[i]
                 message = sender_window[0]
                 print("length_ack: " + str(len(ack_window)))
@@ -153,7 +153,7 @@ def client():
 
                 if seq == ack_ack:
                     del sender_window[0]
-
+                    i = 0
                     data = f.read(1460)
                     if not data:
                         break
@@ -167,6 +167,8 @@ def client():
                     sender_window.append(msg)
                     seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+
+                i += 1
         # Create fin
         sequence_number = 0
         acknowledgement_number = 0
@@ -182,16 +184,20 @@ def client():
         print("----------------------------")
         print("Connection gracefully closed")
 
-    if args.reliability == "GBN-SR":
+    elif args.reliability == "GBN-SR":
         print("Using the Go Back N approach with selective repeat....")
         print("----------------------------------")
 
         f = open(args.file, "rb")
         sender_window = []
+        rest_window = []
+        new_window = []
         counter = 1
         data = 0
         for i in range(int(args.window)):
             data = f.read(1460)
+            if not data:
+                break
             sequence_number = counter
             acknowledgement_number = 0
             flags = 0
@@ -203,53 +209,66 @@ def client():
             seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
             print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
-        while data:
+        while True:
+            if not data and not sender_window:
+                break
+
             #  Sends the whole sender window
             for i in range(len(sender_window)):
                 clientSocket.sendto(sender_window[i], (serverName, serverPort))
 
             #  Receives acks from server, puts in array
             ack_window = []
-            new_window = []
-            for i in range(int(args.window)):
+            for i in range(len(sender_window)):
                 try:
                     clientSocket.settimeout(0.5)
                     ack = clientSocket.recv(12)
                     ack_window.append(ack)
+                    seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
+                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                 except TimeoutError:
                     break
 
-            #   Compares acks and seq and updates sender window
-            for i in range(len(ack_window)):
-                for j in range(len(sender_window)):
-                    ack = ack_window[i]
-                    message = sender_window[j]
+            sender_size = len(sender_window)
+            for i in range(sender_size):
+                for j in range(len(ack_window)):
+                    ack = ack_window[j]
+                    if not sender_window:
+                        break
+                    message = sender_window[0]
+
+                    print("length_ack: " + str(len(ack_window)))
+                    print("length_sender: " + str(len(sender_window)))
 
                     ack_seq, ack_ack, ack_flags, ack_win = parse_header(ack[:12])
                     seq, ack, flags, win = parse_header(message[:12])
 
-                    print("Seq " + str(seq))
-                    print("Ack " + str(ack_ack))
-
                     if seq == ack_ack:
+                        del sender_window[0]
                         data = f.read(1460)
+                        if not data:
+                            break
                         sequence_number = counter
                         acknowledgement_number = 0
                         flags = 0
                         window = 0
                         counter += 1
-
-                        del sender_window[j]
-
                         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
                         new_window.append(msg)
-
-                        # All the packets are sent, and we can start sending the new ones
-                        if not sender_window:
-                            sender_window = new_window
-                            break
-                        # The ack is in the sender window, breaking out, so we don't redundantly check the rest of the array
+                        seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
+                        print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                         break
+
+                    elif i == len(ack_window) - 1:
+                        rest_window.append(sender_window[0])
+                        del sender_window[0]
+
+            if rest_window:
+                sender_window = rest_window
+                rest_window = []
+            else:
+                sender_window = new_window
+                new_window = []
 
         # Create fin
         sequence_number = 0
@@ -346,7 +365,7 @@ def server():
             print("Connection gracefully closed")
             f.close()
 
-        if args.reliability == "GBN":
+        elif args.reliability == "GBN":
             print("Using the Go Back N approach....")
             print("----------------------------------")  # And sent back an ack to receiver
 
@@ -404,31 +423,34 @@ def server():
             print("----------------------------")
             print("Connection gracefully closed")
 
-        if args.reliability == "GBN-SR":
+        elif args.reliability == "GBN-SR":
             print("Using the Go Back N approach with selective repeat....")
             print("----------------------------------")  # And sent back an ack to receiver
 
-            receiver_window = []
-            ack_window = []
+            storage = []
             f = open('new_file.jpg', 'wb')
             tracker = 1
             addr = ()
             dataCheck = True
-            saved_buffer = []
 
             while dataCheck:
                 receiver_window = []
                 for i in range(int(args.window)):
-                    data, addr = serverSocket.recvfrom(1472)
-                    seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
-                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-                    syn, ack, fin = parse_flags(flags)
-                    if fin == 2:
-                        dataCheck = False
+                    try:
+                        serverSocket.settimeout(0.5)
+                        data, addr = serverSocket.recvfrom(1472)
+                        seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
+                        print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                        syn, ack, fin = parse_flags(flags)
+                        if fin == 2:
+                            dataCheck = False
+                            break
+                        receiver_window.append(data)
+                    except TimeoutError:
                         break
-                    receiver_window.append(data)
 
-                for i in range(len(receiver_window)):
+                i = 0
+                while i < (len(receiver_window)):
                     data = receiver_window[i]
                     seq, ack, flags, win = parse_header(data[:12])
                     syn, ack, fin = parse_flags(flags)
@@ -442,20 +464,20 @@ def server():
                         f.write(data[12:])
                         tracker += 1
 
-                    elif seq != tracker:
-                        print("Hallo?")
-                        saved_buffer.append(receiver_window[i])
-                        for j in range(len(saved_buffer)):
-                            data = saved_buffer[j]
-                            seq, ack, flags, win = parse_header(data[:12])
-                            syn, ack, fin = parse_flags(flags)
-
-                            if tracker == seq:
+                    else:
+                        found = False
+                        for j in range(len(storage)):
+                            tmp_data = storage[j]
+                            tmp_seq, tmp_ack, tmp_flags, tmp_win = parse_header(tmp_data[:12])
+                            if tracker == tmp_seq:
                                 f.write(data[12:])
+                                del storage[j]
                                 tracker += 1
-                                del saved_buffer[j]
+                                found = True
                                 i -= 1
-                                print("Henter fra buffer")
+                                break
+                        if not found:
+                            storage.append(data)
 
                     # Create ack
                     sequence_number = 0
@@ -469,7 +491,8 @@ def server():
                     seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
-            print(len(saved_buffer))
+                    i += 1
+
             f.close()
             serverSocket.close()
             print("----------------------------")
