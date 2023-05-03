@@ -573,4 +573,4 @@ elif args.server:
 # Handshake
 # SR alone?
 # CheckWindowSizeN
-# Hjelp
+# Hjelp!
