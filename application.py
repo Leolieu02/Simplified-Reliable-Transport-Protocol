@@ -574,4 +574,4 @@ elif args.server:
 # SR alone?
 # CheckWindowSizeN
 # Hjelp!
-# Ferdig, snart
+# Ferdig
