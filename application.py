@@ -120,7 +120,11 @@ def client():
             seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
             print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
-        while sender_window:
+        while True:
+
+            if not data and not sender_window:
+                break
+
             #  Sends the whole sender window
             for i in range(len(sender_window)):
                 clientSocket.sendto(sender_window[i], (serverName, serverPort))
@@ -132,6 +136,8 @@ def client():
                     clientSocket.settimeout(0.5)
                     ack = clientSocket.recv(12)
                     ack_window.append(ack)
+                    seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
+                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                 except TimeoutError:
                     break
 
@@ -139,12 +145,11 @@ def client():
             for i in range(len(ack_window)):
                 ack = ack_window[i]
                 message = sender_window[0]
+                print("length_ack: " + str(len(ack_window)))
+                print("length_sender: " + str(len(sender_window)))
 
                 ack_seq, ack_ack, ack_flags, ack_win = parse_header(ack[:12])
                 seq, ack, flags, win = parse_header(message[:12])
-
-                print("Seq " + str(seq))
-                print("Ack " + str(ack_ack))
 
                 if seq == ack_ack:
                     del sender_window[0]
@@ -160,10 +165,8 @@ def client():
 
                     msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
                     sender_window.append(msg)
-
-                elif seq != ack_ack:
-                    break
-
+                    seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
+                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
         # Create fin
         sequence_number = 0
         acknowledgement_number = 0
@@ -349,7 +352,7 @@ def server():
 
             receiver_window = []
             ack_window = []
-            f = open('new_file.jpg', 'wb')
+            f = open('new_file.txt', 'wb')
             tracker = 1
             addr = ()
             dataCheck = True
