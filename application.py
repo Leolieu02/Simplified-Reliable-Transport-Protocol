@@ -259,17 +259,18 @@ def client():
                         print("Ny vindu er " + str(len(new_window)))
                         seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
                         print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-                        break
 
-                    elif i == len(ack_window) - 1:
+                    elif j == len(ack_window) - 1:
                         rest_window.append(sender_window[0])
                         del sender_window[0]
 
             if rest_window:
                 sender_window = rest_window.copy()
+                print("Kopierer rest")
                 rest_window = []
-            else:
+            elif new_window:
                 sender_window = new_window.copy()
+                print("Kopierer new")
                 new_window = []
 
             print("Sender vindu er " + str(len(sender_window)))
