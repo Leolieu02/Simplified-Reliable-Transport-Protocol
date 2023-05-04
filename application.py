@@ -675,5 +675,5 @@ elif args.server:
 # Filename
 # Kommenter kode
 # Ta vekk print?
-# GBN-SR eller bare SR?
+# GBN-SR eller bare SR??
 
