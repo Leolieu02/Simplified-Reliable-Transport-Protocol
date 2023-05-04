@@ -378,7 +378,6 @@ def server():
                     acknowledgment_number = seq
                     window = 0
                     flags = 4
-                    f.write(data[12:])
                     data = b''
 
                     ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
@@ -388,6 +387,7 @@ def server():
                     print(str(counter))
                 if dropAck:
                     dropAck = False
+
                 data, addr = serverSocket.recvfrom(1472)
 
             print("----------------------------")
