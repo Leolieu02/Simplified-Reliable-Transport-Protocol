@@ -73,6 +73,7 @@ def client():
                     clientSocket.settimeout(0.5)
                     ack = clientSocket.recv(12)
                     seq, ack, flags, win = parse_header(ack[:12])
+                    print("ACK " + str(ack))
                     if ack == sequence_number:
                         ack_wait = False
                     elif ack != sequence_number:  # If you get wrong ack number
@@ -227,9 +228,9 @@ def client():
                     seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                 except socket.timeout:
-                    break
+                    continue
                 except socket.error:
-                    break
+                    continue
 
             sender_size = len(sender_window)
             for i in range(sender_size):
@@ -264,13 +265,15 @@ def client():
 
                     elif j == len(ack_window) - 1:
                         rest_window.append(sender_window[0])
+                        print("Seq ikke sendt " + str(seq))
                         del sender_window[0]
 
             if rest_window:
                 sender_window = rest_window.copy()
                 print("Kopierer rest")
                 rest_window = []
-            elif new_window:
+            # So that if client does not get any acks it will not copy new window yet
+            elif new_window and not sender_window:
                 sender_window = new_window.copy()
                 print("Kopierer new")
                 new_window = []
@@ -355,7 +358,7 @@ def server():
                 if seq == counter:
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                     sequence_number = 0
-                    acknowledgment_number = counter
+                    acknowledgment_number = seq
                     window = 0
                     flags = 4
                     f.write(data[12:])
@@ -364,8 +367,19 @@ def server():
                     ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
                     serverSocket.sendto(ack, addr)
                     counter += 1
-                if seq != counter:
+                elif seq < counter:
+                    sequence_number = 0
+                    acknowledgment_number = seq
+                    window = 0
+                    flags = 4
+                    f.write(data[12:])
+                    data = b''
+
+                    ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                    serverSocket.sendto(ack, addr)
+                elif seq != counter:
                     print("Not the right packet received")
+                    print(str(counter))
                 data, addr = serverSocket.recvfrom(1472)
 
             print("----------------------------")
@@ -457,15 +471,18 @@ def server():
                     if seq == tracker:
                         f.write(data[12:])
                         tracker += 1
+                        print("Tracker lik " + str(tracker))
 
                     elif seq != tracker:
                         for j in range(len(storage)):
                             tmp_data = storage[j]
                             tmp_seq, tmp_ack, tmp_flags, tmp_win = parse_header(tmp_data[:12])
+                            print("Temp seq " + str(tmp_seq))
                             if tracker == tmp_seq:
                                 f.write(data[12:])
                                 del storage[j]
                                 tracker += 1
+                                print("Tracker storage " + str(tracker))
                                 break  # Found in storage
                         storage.append(data)
 
