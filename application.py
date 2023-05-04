@@ -594,7 +594,7 @@ parser.add_argument('-p', '--port', help='Choose port number', type=valid_port, 
 parser.add_argument('-i', '--ipaddress', help='Choose an IP address for connection', type=valid_ip, default='127.0.0.1')
 parser.add_argument('-r', '--reliability', help='Choose a reliability function to use for connection')
 parser.add_argument('-f', '--file', help='Choose a file to send')
-parser.add_argument('-w', '--window', help='Choose the window size (only for GBN or GBN-SR)', type=checkWindowSize, default=5)
+parser.add_argument('-w', '--window', help='Choose the window size 5, 10 or 15 (only for GBN or GBN-SR)', type=checkWindowSize, default=5)
 
 
 # Parsing the arguments that we just took in
