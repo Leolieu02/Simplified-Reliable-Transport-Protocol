@@ -495,7 +495,7 @@ def server():
                             tmp_seq, tmp_ack, tmp_flags, tmp_win = parse_header(tmp_data[:12])
                             print("Temp seq " + str(tmp_seq))
                             if tracker == tmp_seq:
-                                f.write(data[12:])
+                                f.write(tmp_data[12:])
                                 del storage[j]
                                 tracker += 1
                                 print("Tracker storage " + str(tracker))
