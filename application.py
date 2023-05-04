@@ -577,7 +577,6 @@ def checkWindowSize(val):
         raise argparse.ArgumentTypeError('Window-size must be an integer')
     valid_size = (5, 10, 15)
     if size not in valid_size:
-        print(size, 'size')
         raise argparse.ArgumentTypeError('Window-size must be 5, 10 or 15')
     else:
         return size
