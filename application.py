@@ -336,6 +336,9 @@ def handshake_client(serverName, serverPort, clientSocket):
 
 
 def server():
+    dropAck = False
+    if args.testcase == "dropack":
+        dropAck = True
     try:
         # Create a socket
         serverSocket = socket.socket(AF_INET, SOCK_DGRAM)
@@ -367,6 +370,7 @@ def server():
                     ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
                     serverSocket.sendto(ack, addr)
                     counter += 1
+
                 elif seq < counter:
                     sequence_number = 0
                     acknowledgment_number = seq
@@ -414,6 +418,10 @@ def server():
                         break
 
                 for i in range(len(receiver_window)):
+                    if dropAck:
+                        dropAck = False
+                        continue
+
                     data = receiver_window[i]
                     seq, ack, flags, win = parse_header(data[:12])
                     syn, ack, fin = parse_flags(flags)
@@ -464,6 +472,10 @@ def server():
                     syn, ack, fin = parse_flags(flags)
                     if fin == 2:
                         break
+
+                    if dropAck:
+                        dropAck = False
+                        continue
                     # If expected sequence number, write to file
                     # If a packet is skipped, the next packet will not be used to write to file
                     # Even if the packet is wrong, the server will still send an ack so that the client understands which
@@ -593,6 +605,7 @@ parser.add_argument('-i', '--ipaddress', help='Choose an IP address for connecti
 parser.add_argument('-r', '--reliability', help='Choose a reliability function to use for connection')
 parser.add_argument('-f', '--file', help='Choose a file to send')
 parser.add_argument('-w', '--window', help='Choose the window size 5, 10 or 15 (only for GBN or GBN-SR)', type=checkWindowSize, default=5)
+parser.add_argument('-t', '--testcase', help='Choose test case')
 
 # Parsing the arguments that we just took in
 args = parser.parse_args()
