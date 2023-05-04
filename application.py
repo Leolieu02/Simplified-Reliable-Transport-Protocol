@@ -566,6 +566,21 @@ def valid_port(port):
         raise argparse.ArgumentTypeError('Invalid port')
     return value
 
+# Function for checking valid window-sizes
+# Checks if input is integer and if input is one of the valid values, raises ArgumentTypeError if not
+def checkWindowSize(val):
+    try:
+        size = int(val)
+    except ValueError:
+        raise argparse.ArgumentTypeError('Window-size must be an integer')
+    valid_size = (5, 10, 15)
+    if size not in valid_size:
+        print(size, 'size')
+        raise argparse.ArgumentTypeError('Window-size must be 5, 10 or 15')
+    else:
+        return size
+
+
 
 # Method that takes in the arguments and parses them, so we can take out the values
 parser = argparse.ArgumentParser(description='Simplified version of Iperf method in Mininet', epilog='End of help')
@@ -577,7 +592,7 @@ parser.add_argument('-p', '--port', help='Choose port number', type=valid_port, 
 parser.add_argument('-i', '--ipaddress', help='Choose an IP address for connection', type=valid_ip, default='127.0.0.1')
 parser.add_argument('-r', '--reliability', help='Choose a reliability function to use for connection')
 parser.add_argument('-f', '--file', help='Choose a file to send')
-parser.add_argument('-w', '--window', help='Choose the window size (only for GBN or GBN-SR)', default=5)
+parser.add_argument('-w', '--window', help='Choose the window size (only for GBN or GBN-SR)', type=checkWindowSize, default=5)
 
 
 # Parsing the arguments that we just took in
