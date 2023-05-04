@@ -498,7 +498,7 @@ def server():
                                 f.write(tmp_data[12:])
                                 del storage[j]
                                 tracker += 1
-                                print("Tracker storage " + str(tracker))
+                                print("Tracker storage " + str(len(storage)))
                                 break  # Found in storage
                         storage.append(data)
 
@@ -515,6 +515,18 @@ def server():
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                 except socket.timeout:
                     continue
+
+            lastCheck = 0
+            while lastCheck < len(storage):
+                seq, ack, flags, win = parse_header(storage[lastCheck][:12])  # it's an ack message with only the header
+                print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                if tracker == seq:
+                    f.write(storage[lastCheck][12:])
+                    del storage[lastCheck]
+                    tracker += 1
+                    print("Tracker storage " + str(len(storage)))
+                    lastCheck = -1
+                lastCheck += 1
 
             f.close()
             serverSocket.close()
