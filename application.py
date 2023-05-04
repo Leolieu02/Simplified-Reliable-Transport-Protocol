@@ -1,8 +1,9 @@
 import argparse
+import socket
 from struct import *
 import sys
 import ipaddress
-from socket import *
+from socket import AF_INET, SOCK_DGRAM
 
 # I integer (unsigned long) = 4bytes and H (unsigned short integer 2 bytes)
 # see the struct official page for more info
@@ -46,7 +47,7 @@ def parse_flags(flags):
 def client():
     serverName = args.ipaddress
     serverPort = args.port
-    clientSocket = socket(AF_INET, SOCK_DGRAM)
+    clientSocket = socket.socket(AF_INET, SOCK_DGRAM)
 
     handshake_client(serverName, serverPort, clientSocket)
 
@@ -76,7 +77,7 @@ def client():
                         ack_wait = False
                     elif ack != sequence_number:  # If you get wrong ack number
                         clientSocket.sendto(msg, (serverName, serverPort))  # Resend packet
-                except TimeoutError:  # If timer runs out, resend (timeout resend)
+                except socket.timeout:  # If timer runs out, resend (timeout resend)
                     ack_wait = True
                     clientSocket.sendto(msg, (serverName, serverPort))  # Resend packet
 
@@ -137,7 +138,7 @@ def client():
                     ack_window.append(ack)
                     seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-                except TimeoutError:
+                except socket.timeout:
                     break
 
             #   Compares acks and seq and updates sender window
@@ -212,7 +213,6 @@ def client():
         while True:
             if not sender_window:
                 break
-
             #  Sends the whole sender window
             for i in range(len(sender_window)):
                 clientSocket.sendto(sender_window[i], (serverName, serverPort))
@@ -226,7 +226,9 @@ def client():
                     ack_window.append(ack)
                     seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-                except TimeoutError:
+                except socket.timeout:
+                    break
+                except socket.error:
                     break
 
             sender_size = len(sender_window)
@@ -333,7 +335,7 @@ def handshake_client(serverName, serverPort, clientSocket):
 def server():
     try:
         # Create a socket
-        serverSocket = socket(AF_INET, SOCK_DGRAM)
+        serverSocket = socket.socket(AF_INET, SOCK_DGRAM)
         serverPort = args.port
         # Bind with client
         handshake_server(serverSocket, serverPort)
@@ -394,7 +396,7 @@ def server():
                             dataCheck = False
                             break
                         receiver_window.append(data)
-                    except TimeoutError:
+                    except socket.timeout:
                         break
 
                 for i in range(len(receiver_window)):
@@ -451,7 +453,7 @@ def server():
                             dataCheck = False
                             break
                         receiver_window.append(data)
-                    except TimeoutError:
+                    except socket.timeout:
                         break
 
                 i = 0
