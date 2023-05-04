@@ -355,11 +355,11 @@ def server():
             counter = 1
             while data:
                 seq, ack, flags, win = parse_header(data[:12])
+                print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                 syn, ack, fin = parse_flags(flags)
                 if fin == 2:
                     break
                 if seq == counter and not dropAck:
-                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                     sequence_number = 0
                     acknowledgment_number = seq
                     window = 0
