@@ -438,31 +438,18 @@ def server():
             f = open('new_file.jpg', 'wb')
             tracker = 1
             addr = ()
-            dataCheck = True
-
-            while dataCheck:
+            global dataLeft
+            dataLeft = True
+            while True:
                 receiver_window = []
-                for i in range(int(args.window)):
-                    try:
-                        serverSocket.settimeout(0.5)
-                        data, addr = serverSocket.recvfrom(1472)
-                        seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
-                        print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-                        syn, ack, fin = parse_flags(flags)
-                        if fin == 2:
-                            dataCheck = False
-                            break
-                        receiver_window.append(data)
-                    except socket.timeout:
-                        break
-
-                i = 0
-                while i < (len(receiver_window)):
-                    data = receiver_window[i]
-                    seq, ack, flags, win = parse_header(data[:12])
+                try:
+                    serverSocket.settimeout(0.5)
+                    data, addr = serverSocket.recvfrom(1472)
+                    seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
+                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                     syn, ack, fin = parse_flags(flags)
-                    print(fin)
-
+                    if fin == 2:
+                        break
                     # If expected sequence number, write to file
                     # If a packet is skipped, the next packet will not be used to write to file
                     # Even if the packet is wrong, the server will still send an ack so that the client understands which
@@ -471,8 +458,7 @@ def server():
                         f.write(data[12:])
                         tracker += 1
 
-                    else:
-                        found = False
+                    elif seq != tracker:
                         for j in range(len(storage)):
                             tmp_data = storage[j]
                             tmp_seq, tmp_ack, tmp_flags, tmp_win = parse_header(tmp_data[:12])
@@ -480,11 +466,8 @@ def server():
                                 f.write(data[12:])
                                 del storage[j]
                                 tracker += 1
-                                found = True
-                                i -= 1
-                                break
-                        if not found:
-                            storage.append(data)
+                                break  # Found in storage
+                        storage.append(data)
 
                     # Create ack
                     sequence_number = 0
@@ -497,8 +480,8 @@ def server():
                     serverSocket.sendto(ack, addr)
                     seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-
-                    i += 1
+                except socket.timeout:
+                    continue
 
             f.close()
             serverSocket.close()
@@ -582,7 +565,6 @@ def checkWindowSize(val):
         return size
 
 
-
 # Method that takes in the arguments and parses them, so we can take out the values
 parser = argparse.ArgumentParser(description='Simplified version of Iperf method in Mininet', epilog='End of help')
 
@@ -594,7 +576,6 @@ parser.add_argument('-i', '--ipaddress', help='Choose an IP address for connecti
 parser.add_argument('-r', '--reliability', help='Choose a reliability function to use for connection')
 parser.add_argument('-f', '--file', help='Choose a file to send')
 parser.add_argument('-w', '--window', help='Choose the window size 5, 10 or 15 (only for GBN or GBN-SR)', type=checkWindowSize, default=5)
-
 
 # Parsing the arguments that we just took in
 args = parser.parse_args()
