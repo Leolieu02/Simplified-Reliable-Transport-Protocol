@@ -46,6 +46,10 @@ def parse_flags(flags):
 
 
 def client():
+    dropSequence = False
+    if args.testcase == "dropseq":
+        dropSequence = True
+
     serverName = args.ipaddress
     serverPort = args.port
     clientSocket = socket.socket(AF_INET, SOCK_DGRAM)
@@ -129,6 +133,9 @@ def client():
 
             #  Sends the whole sender window
             for i in range(len(sender_window)):
+                if dropSequence:
+                    dropSequence = False
+                    continue
                 clientSocket.sendto(sender_window[i], (serverName, serverPort))
 
             #  Receives acks from server, puts in array
@@ -217,6 +224,9 @@ def client():
                 break
             #  Sends the whole sender window
             for i in range(len(sender_window)):
+                if dropSequence:
+                    dropSequence = False
+                    continue
                 clientSocket.sendto(sender_window[i], (serverName, serverPort))
 
             #  Receives acks from server, puts in array
@@ -620,7 +630,6 @@ def checkfile(val):
         raise argparse.ArgumentTypeError(f'File {file} does not excist')
 
 
-
 # Method that takes in the arguments and parses them, so we can take out the values
 parser = argparse.ArgumentParser(description='Simplified version of Iperf method in Mininet', epilog='End of help')
 
@@ -662,5 +671,9 @@ elif args.server:
 # Handshake
 # SR alone?
 # CheckWindowSizeN
-# Hjelp!
-# Ferdig
+# Check dropack
+# Filename
+# Kommenter kode
+# Ta vekk print?
+# GBN-SR eller bare SR?
+
