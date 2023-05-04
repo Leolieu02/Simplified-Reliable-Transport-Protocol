@@ -1,4 +1,5 @@
 import argparse
+from os import path
 import socket
 from struct import *
 import sys
@@ -593,6 +594,15 @@ def checkWindowSize(val):
     else:
         return size
 
+# Function for checking if inputed file exist
+# Raises ArgumentTypeError is file does not exist and stops client
+def checkfile(val):
+    file = str(val)
+    if path.exists(file):
+        return val
+    else:
+        raise argparse.ArgumentTypeError(f'File {file} does not excist')
+
 
 # Method that takes in the arguments and parses them, so we can take out the values
 parser = argparse.ArgumentParser(description='Simplified version of Iperf method in Mininet', epilog='End of help')
@@ -602,8 +612,8 @@ parser.add_argument('-s', '--server', help='Starts a server', action='store_true
 parser.add_argument('-c', '--client', help='Starts a client', action='store_true')
 parser.add_argument('-p', '--port', help='Choose port number', type=valid_port, default=8088)
 parser.add_argument('-i', '--ipaddress', help='Choose an IP address for connection', type=valid_ip, default='127.0.0.1')
-parser.add_argument('-r', '--reliability', help='Choose a reliability function to use for connection')
-parser.add_argument('-f', '--file', help='Choose a file to send')
+parser.add_argument('-r', '--reliability', help='Choose a reliability function to use for connection', choices=['SAW', 'GBN', 'GBN-SR'])
+parser.add_argument('-f', '--file', help='Choose a file to send', type=checkfile)
 parser.add_argument('-w', '--window', help='Choose the window size 5, 10 or 15 (only for GBN or GBN-SR)', type=checkWindowSize, default=5)
 parser.add_argument('-t', '--testcase', help='Choose test case')
 
