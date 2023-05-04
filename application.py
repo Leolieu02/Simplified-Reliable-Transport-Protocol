@@ -359,6 +359,8 @@ def server():
                 if fin == 2:
                     break
                 if seq == counter:
+                    if dropAck:
+                        return
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                     sequence_number = 0
                     acknowledgment_number = seq
@@ -372,6 +374,8 @@ def server():
                     counter += 1
 
                 elif seq < counter:
+                    if dropAck:
+                        return
                     sequence_number = 0
                     acknowledgment_number = seq
                     window = 0
@@ -384,6 +388,8 @@ def server():
                 elif seq != counter:
                     print("Not the right packet received")
                     print(str(counter))
+                if dropAck:
+                    dropAck = False
                 data, addr = serverSocket.recvfrom(1472)
 
             print("----------------------------")
