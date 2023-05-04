@@ -358,9 +358,7 @@ def server():
                 syn, ack, fin = parse_flags(flags)
                 if fin == 2:
                     break
-                if seq == counter:
-                    if dropAck:
-                        return
+                if seq == counter and not dropAck:
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                     sequence_number = 0
                     acknowledgment_number = seq
@@ -370,12 +368,12 @@ def server():
                     data = b''
 
                     ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+
+                    print("Det funker")
                     serverSocket.sendto(ack, addr)
                     counter += 1
 
-                elif seq < counter:
-                    if dropAck:
-                        return
+                elif seq < counter and not dropAck:
                     sequence_number = 0
                     acknowledgment_number = seq
                     window = 0
