@@ -501,16 +501,6 @@ def server():
                         print("Tracker lik " + str(tracker))
 
                     elif seq != tracker:
-                        for j in range(len(storage)):
-                            tmp_data = storage[j]
-                            tmp_seq, tmp_ack, tmp_flags, tmp_win = parse_header(tmp_data[:12])
-                            print("Temp seq " + str(tmp_seq))
-                            if tracker == tmp_seq:
-                                f.write(tmp_data[12:])
-                                del storage[j]
-                                tracker += 1
-                                print("Tracker storage " + str(len(storage)))
-                                break  # Found in storage
                         storage.append(data)
 
                     # Create ack
