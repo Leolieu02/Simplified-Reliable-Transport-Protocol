@@ -321,10 +321,15 @@ def handshake_client(serverName, serverPort, clientSocket):
 
     clientSocket.sendto(msg, addr)
 
-    ack = clientSocket.recv(12)
+    try:
+        clientSocket.settimeout(0.5)
+        ack = clientSocket.recv(12)
+    except socket.timeout:
+        print("Connection Error: Something went wrong when connecting to the server, please try again")
+        clientSocket.close()
+        sys.exit()
 
     header_from_ack = ack[:12]
-
     seq, ack, flags, win = parse_header(header_from_ack)
     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
     syn, ack, fin = parse_flags(flags)
@@ -550,12 +555,18 @@ def server():
 
 def handshake_server(serverSocket, serverPort):
     serverSocket.bind(('', serverPort))
-    receiveMessage, client_address = serverSocket.recvfrom(12)
-    header_from_receive = receiveMessage[:12]
-    seq, ack, flags, win = parse_header(header_from_receive)
-    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-    syn, ack, fin = parse_flags(flags)
-    print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
+    try:
+        receiveMessage, client_address = serverSocket.recvfrom(12)
+        header_from_receive = receiveMessage[:12]
+        seq, ack, flags, win = parse_header(header_from_receive)
+        print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+        syn, ack, fin = parse_flags(flags)
+        print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
+    except socket.timeout:
+        print("Connection Error: Something went wrong when connecting to the client, please try again")
+        serverSocket.close()
+        sys.exit()
+
     if syn == 8:
         sequence_number = 0
         acknowledgment_number = 0
@@ -567,13 +578,20 @@ def handshake_server(serverSocket, serverPort):
         serverSocket.sendto(msg, client_address)
     else:
         print("Did not receive syn and ack")
+        serverSocket.close()
         sys.exit()
 
-    last_ack = serverSocket.recv(12)
-    seq, ack, flags, win = parse_header(last_ack)
-    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-    syn, ack, fin = parse_flags(flags)
-    print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
+    try:
+        last_ack = serverSocket.recv(12)
+        seq, ack, flags, win = parse_header(last_ack)
+        print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+        syn, ack, fin = parse_flags(flags)
+        print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
+    except socket.timeout:
+        print("Connection Error: Something went wrong when connecting to the client, please try again")
+        serverSocket.close()
+        sys.exit()
+
     if ack == 4:
         print("Connection established with client")
         print("-----------------------------------")
