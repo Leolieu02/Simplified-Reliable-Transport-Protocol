@@ -400,6 +400,8 @@ def server():
         if args.reliability == "SAW":
             print("Using the Stop and Wait method....")
             print("----------------------------------")  # And sent back an ack to receiver
+            # socket.recvfrom will have to wait until it receives a packet, otherwise it will time out with ack loss
+            serverSocket.settimeout(None)
 
             data, addr = serverSocket.recvfrom(1472)
             f = open('new_file.jpg', 'wb')
@@ -439,11 +441,7 @@ def server():
                 if dropAck:
                     dropAck = False
 
-                try:
-                    serverSocket.settimeout(0.5)
-                    data, addr = serverSocket.recvfrom(1472)
-                except socket.timeout:
-                    continue
+                data, addr = serverSocket.recvfrom(1472)
 
             # Create ack for fin
             sequence_number = 0
