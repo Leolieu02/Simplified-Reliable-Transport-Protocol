@@ -137,9 +137,12 @@ def client():
                     dropSequence = False
                     continue
                 clientSocket.sendto(sender_window[i], (serverName, serverPort))
+                seq, ack, flags, win = parse_header(sender_window[i][:12])
+                print("Sent packet nr " + str(seq))
 
             #  Receives acks from server, puts in array
             ack_window = []
+            print("Ack window:")
             for i in range(len(sender_window)):
                 try:
                     clientSocket.settimeout(0.5)
@@ -154,6 +157,8 @@ def client():
             i = 0
             while i < (len(ack_window)):
                 ack = ack_window[i]
+                if not sender_window:
+                    break
                 message = sender_window[0]
                 print("length_ack: " + str(len(ack_window)))
                 print("length_sender: " + str(len(sender_window)))
@@ -166,7 +171,7 @@ def client():
                     i = 0
                     data = f.read(1460)
                     if not data:
-                        break
+                        continue
                     sequence_number = counter
                     acknowledgement_number = 0
                     flags = 0
@@ -419,53 +424,43 @@ def server():
             f = open('new_file.jpg', 'wb')
             tracker = 1
             addr = ()
-            dataCheck = True
-
-            while dataCheck:
-                receiver_window = []
-                for i in range(int(args.window)):
-                    try:
-                        serverSocket.settimeout(0.5)
-                        data, addr = serverSocket.recvfrom(1472)
-                        seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
-                        print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
-                        syn, ack, fin = parse_flags(flags)
-                        if fin == 2:
-                            dataCheck = False
-                            break
-                        receiver_window.append(data)
-                    except socket.timeout:
-                        break
-
-                for i in range(len(receiver_window)):
-                    if dropAck:
-                        dropAck = False
-                        continue
-
-                    data = receiver_window[i]
-                    seq, ack, flags, win = parse_header(data[:12])
-                    syn, ack, fin = parse_flags(flags)
-                    print(fin)
-
-                    # If expected sequence number, write to file
-                    # If a packet is skipped, the next packet will not be used to write to file
-                    # Even if the packet is wrong, the server will still send an ack so that the client understands which
-                    # packet went missing
-                    if seq == tracker:
-                        f.write(data[12:])
-                        tracker += 1
-
-                    # Create ack
-                    sequence_number = 0
-                    acknowledgment_number = seq
-                    flags = 4
-                    window = 0
-                    data = b''
-
-                    ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
-                    serverSocket.sendto(ack, addr)
-                    seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
+            while True:
+                try:
+                    serverSocket.settimeout(0.5)
+                    data, addr = serverSocket.recvfrom(1472)
+                    seq, ack, flags, win = parse_header(data[:12])  # it's an ack message with only the header
                     print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                    syn, ack, fin = parse_flags(flags)
+                    if fin == 2:
+                        break
+                except socket.timeout:
+                    continue
+
+                if dropAck:
+                    dropAck = False
+                    continue
+
+                seq, ack, flags, win = parse_header(data[:12])
+                syn, ack, fin = parse_flags(flags)
+                print(fin)
+                # If expected sequence number, write to file
+                # If a packet is skipped, the next packet will not be used to write to file
+                # Even if the packet is wrong, the server will still send an ack so that the client understands which
+                # packet went missing
+                if seq == tracker:
+                    f.write(data[12:])
+                    tracker += 1
+
+                # Create ack
+                sequence_number = 0
+                acknowledgment_number = seq
+                flags = 4
+                window = 0
+                data = b''
+                ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                serverSocket.sendto(ack, addr)
+                seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
+                print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
             f.close()
             serverSocket.close()
