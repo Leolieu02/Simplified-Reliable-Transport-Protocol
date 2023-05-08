@@ -667,12 +667,8 @@ elif args.server:
     server()
 
 
-# Window size
 # Handshake
 # SR alone?
-# CheckWindowSizeN
-# Check dropack
-# Filename
 # Kommenter kode
 # Ta vekk print?
 # GBN-SR eller bare SR??
