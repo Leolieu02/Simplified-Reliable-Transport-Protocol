@@ -97,12 +97,22 @@ def client():
         data = b''
 
         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
-        clientSocket.sendto(msg, (serverName, serverPort))
 
-        f.close()
-        clientSocket.close()
-        print("----------------------------")
-        print("Connection gracefully closed")
+        while True:
+            clientSocket.sendto(msg, (serverName, serverPort))
+            # Wait for ack for the fin message
+            try:
+                clientSocket.settimeout(0.5)
+                fin_ack = clientSocket.recv(12)
+                seq, ack, flags, win = parse_header(fin_ack[:12])
+                if ack == 0 and flags == 4:
+                    f.close()
+                    clientSocket.close()
+                    print("----------------------------")
+                    print("Connection gracefully closed")
+                    break
+            except socket.timeout:
+                continue
 
     elif args.reliability == "GBN":
         print("Using the Go Back N approach....")
@@ -192,12 +202,23 @@ def client():
         data = b''
 
         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
-        clientSocket.sendto(msg, (serverName, serverPort))
 
-        f.close()
-        clientSocket.close()
-        print("----------------------------")
-        print("Connection gracefully closed")
+        while True:
+            clientSocket.sendto(msg, (serverName, serverPort))
+            # Wait for ack for the fin message
+            try:
+                clientSocket.settimeout(0.5)
+                fin_ack = clientSocket.recv(12)
+                seq, ack, flags, win = parse_header(fin_ack[:12])
+                if ack == 0 and flags == 4:
+                    f.close()
+                    clientSocket.close()
+                    print("----------------------------")
+                    print("Connection gracefully closed")
+                    break
+            except socket.timeout:
+                continue
+
 
     elif args.reliability == "GBN-SR":
         print("Using the Go Back N approach with selective repeat....")
@@ -304,13 +325,22 @@ def client():
         data = b''
 
         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
-        clientSocket.sendto(msg, (serverName, serverPort))
 
-        f.close()
-        clientSocket.close()
-        print("----------------------------")
-        print("Connection gracefully closed")
-
+        while True:
+            clientSocket.sendto(msg, (serverName, serverPort))
+            # Wait for ack for the fin message
+            try:
+                clientSocket.settimeout(0.5)
+                fin_ack = clientSocket.recv(12)
+                seq, ack, flags, win = parse_header(fin_ack[:12])
+                if ack == 0 and flags == 4:
+                    f.close()
+                    clientSocket.close()
+                    print("----------------------------")
+                    print("Connection gracefully closed")
+                    break
+            except socket.timeout:
+                continue
 
 def handshake_client(serverName, serverPort, clientSocket):
     sequence_number = 0
@@ -411,6 +441,17 @@ def server():
 
                 data, addr = serverSocket.recvfrom(1472)
 
+            # Create ack for fin
+            sequence_number = 0
+            acknowledgment_number = 0
+            flags = 4
+            window = 0
+            data = b''
+            ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+            serverSocket.sendto(ack, addr)
+            seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
+            print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+
             print("----------------------------")
             print("Connection gracefully closed")
             f.close()
@@ -461,6 +502,17 @@ def server():
                 serverSocket.sendto(ack, addr)
                 seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
                 print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+
+            # Create ack for fin
+            sequence_number = 0
+            acknowledgment_number = 0
+            flags = 4
+            window = 0
+            data = b''
+            ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+            serverSocket.sendto(ack, addr)
+            seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
+            print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
             f.close()
             serverSocket.close()
@@ -528,6 +580,17 @@ def server():
                     print("Tracker storage " + str(len(storage)))
                     lastCheck = -1
                 lastCheck += 1
+
+            # Create ack for fin
+            sequence_number = 0
+            acknowledgment_number = 0
+            flags = 4
+            window = 0
+            data = b''
+            ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+            serverSocket.sendto(ack, addr)
+            seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
+            print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
             f.close()
             serverSocket.close()
@@ -675,5 +738,5 @@ elif args.server:
 # READ.ME
 # Ta vekk print?
 # Bytt til SR fra GBN-SR
-#
+# Check reliability, check testcase
 
