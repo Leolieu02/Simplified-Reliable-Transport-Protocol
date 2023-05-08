@@ -686,9 +686,9 @@ elif args.server:
     server()
 
 
-# Handshake
-# SR alone?
 # Kommenter kode
+# READ.ME
 # Ta vekk print?
-# GBN-SR eller bare SR??
+# Bytt til SR fra GBN-SR
+#
 
