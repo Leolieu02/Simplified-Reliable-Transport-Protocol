@@ -556,7 +556,6 @@ def server():
 def handshake_server(serverSocket, serverPort):
     serverSocket.bind(('', serverPort))
     try:
-        serverSocket.settimeout(0.5)
         receiveMessage, client_address = serverSocket.recvfrom(12)
         header_from_receive = receiveMessage[:12]
         seq, ack, flags, win = parse_header(header_from_receive)
