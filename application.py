@@ -439,7 +439,11 @@ def server():
                 if dropAck:
                     dropAck = False
 
-                data, addr = serverSocket.recvfrom(1472)
+                try:
+                    serverSocket.settimeout(0.5)
+                    data, addr = serverSocket.recvfrom(1472)
+                except socket.timeout:
+                    continue
 
             # Create ack for fin
             sequence_number = 0
