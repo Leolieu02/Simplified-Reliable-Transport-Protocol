@@ -582,6 +582,7 @@ def handshake_server(serverSocket, serverPort):
         sys.exit()
 
     try:
+        serverSocket.settimeout(0.5)
         last_ack = serverSocket.recv(12)
         seq, ack, flags, win = parse_header(last_ack)
         print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
