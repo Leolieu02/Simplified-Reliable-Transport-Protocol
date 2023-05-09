@@ -1,5 +1,6 @@
 import argparse
 import socket
+import time
 from struct import *
 import sys
 import ipaddress
@@ -404,6 +405,7 @@ def server():
             serverSocket.settimeout(None)
 
             data, addr = serverSocket.recvfrom(1472)
+            start_time = time.time()
             f = open('new_file.jpg', 'wb')
             counter = 1
             while data:
@@ -453,10 +455,16 @@ def server():
             serverSocket.sendto(ack, addr)
             seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
             print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+            end_time = time.time()
+
+            duration = end_time - start_time
 
             print("----------------------------")
-            print("Connection gracefully closed")
+            print("Total duration of the transfer was " + str(round(duration, 2)))
+
             f.close()
+            print("----------------------------")
+            print("Connection gracefully closed")
 
         elif args.reliability == "GBN":
             print("Using the Go Back N approach....")
@@ -467,6 +475,7 @@ def server():
             f = open('new_file.jpg', 'wb')
             tracker = 1
             addr = ()
+            start_time = time.time()
             while True:
                 try:
                     serverSocket.settimeout(0.5)
@@ -516,6 +525,13 @@ def server():
             seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
             print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
+            end_time = time.time()
+
+            duration = end_time - start_time
+
+            print("----------------------------")
+            print("Total duration of the transfer was " + str(round(duration, 2)))
+
             f.close()
             serverSocket.close()
             print("----------------------------")
@@ -531,6 +547,7 @@ def server():
             addr = ()
             global dataLeft
             dataLeft = True
+            start_time = time.time()
             while True:
                 receiver_window = []
                 try:
@@ -593,6 +610,13 @@ def server():
             serverSocket.sendto(ack, addr)
             seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
             print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+
+            end_time = time.time()
+
+            duration = end_time - start_time
+
+            print("----------------------------")
+            print("Total duration of the transfer was " + str(round(duration, 2)))
 
             f.close()
             serverSocket.close()
@@ -689,7 +713,17 @@ def checkWindowSize(val):
     else:
         return size
 
-# Function for checking if inputed file exist
+# Function for checking if the right testcase is used, if not, the function returns a error message
+# and explains how and when to use which test case
+# Raises ArgumentTypeError if the test cases are typed incorrectly
+def checkTestcase(test):
+    valid_test = ("dropseq", "dropack")
+    if test not in valid_test:
+        raise argparse.ArgumentTypeError("Testcase must be 'dropack' for server and 'dropseq' for client")
+    else:
+        return test
+
+# Function for checking if inputed file exists
 # Raises ArgumentTypeError is file does not exist and stops client
 def checkfile(val):
     file = str(val)
@@ -710,7 +744,7 @@ parser.add_argument('-i', '--ipaddress', help='Choose an IP address for connecti
 parser.add_argument('-r', '--reliability', help='Choose a reliability function to use for connection', choices=['SAW', 'GBN', 'GBN-SR'])
 parser.add_argument('-f', '--file', help='Choose a file to send', type=checkfile)
 parser.add_argument('-w', '--window', help='Choose the window size 5, 10 or 15 (only for GBN or GBN-SR)', type=checkWindowSize, default=5)
-parser.add_argument('-t', '--testcase', help='Choose test case')
+parser.add_argument('-t', '--testcase', help='Choose test case', type=checkTestcase)
 
 # Parsing the arguments that we just took in
 args = parser.parse_args()
@@ -740,5 +774,5 @@ elif args.server:
 # READ.ME
 # Ta vekk print?
 # Bytt til SR fra GBN-SR
-# Check reliability, check testcase
+# Check reliability
 
