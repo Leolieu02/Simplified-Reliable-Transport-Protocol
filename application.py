@@ -13,6 +13,10 @@ from os import path
 header_format = '!IIHH'
 
 
+# Taken from lecture
+# The function creates a packet that we use to send from client to server and opposite
+# Takes in the arguments seq, ack, flags, win, data
+# Then returns the packet
 def create_packet(seq, ack, flags, win, data):
     # creates a packet with header information and application data
     # the input arguments are sequence number, acknowledgment number
@@ -28,6 +32,10 @@ def create_packet(seq, ack, flags, win, data):
     return packet
 
 
+# Taken from lecture
+# The function parses the header of the packet
+# Takes the header as the argument
+# Then returns the values of the parsed header
 def parse_header(header):
     # taks a header of 12 bytes as an argument,
     # unpacks the value based on the specified header_format
@@ -37,6 +45,10 @@ def parse_header(header):
     return header_from_msg
 
 
+# Taken from lecture
+# The function parses the flags of the header
+# Takes the flag value from the header as the argument
+# Then returns the values of syn, ack and fin in the flag value
 def parse_flags(flags):
     # we only parse the first 3 fields because we're not
     # using rst in our implementation
@@ -784,7 +796,8 @@ def checkfile(val):
 
 
 # Method that takes in the arguments and parses them, so we can take out the values
-parser = argparse.ArgumentParser(description='Simplified version of Iperf method in Mininet', epilog='End of help')
+parser = argparse.ArgumentParser(description='Application that transfers files by using packets and reliable protocols',
+                                 epilog='End of help')
 
 # Arguments for server and client
 parser.add_argument('-s', '--server', help='Starts a server', action='store_true')
@@ -822,8 +835,6 @@ elif args.client:
 elif args.server:
     server()
 
-
-# Kommenter kode
 # READ.ME
 # Ta vekk print?
 
