@@ -28,7 +28,6 @@ def create_packet(seq, ack, flags, win, data):
     # once we create a header, we add the application data to create a packet
     # of 1472 bytes
     packet = header + data
-    print(f'packet containing header + data of size {len(packet)}')  # just to show the length of the packet
     return packet
 
 
@@ -90,7 +89,7 @@ def client():  # Function for all client methods
 
             # Create packet to send the data that you read
             msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
-            print(f'seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
+            print(f'Sending: seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
             clientSocket.sendto(msg, (serverName, serverPort))  # Send the packet to server
             ack_wait = True
             while ack_wait:  # Wait for the ack for the packet you sent
@@ -98,7 +97,7 @@ def client():  # Function for all client methods
                     clientSocket.settimeout(0.5)  # Wait for 0.5 seconds
                     ack = clientSocket.recv(12)  # Receive the ack with only the size of the header (12)
                     seq, ack, flags, win = parse_header(ack[:12])  # Parse the header
-                    print("ACK " + str(ack))
+                    print(f'Receive: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}') # Printing out ack that is being received
                     if ack == sequence_number:  # If it is the right ack, stop waiting for acks, and send next packet
                         ack_wait = False  # Jump out of while ack_wait
                     elif ack != sequence_number:  # If you get wrong ack number
@@ -123,6 +122,7 @@ def client():  # Function for all client methods
         # This part of the code sends the fin packet, and waits for the ack from server
         while True:
             clientSocket.sendto(msg, (serverName, serverPort))
+            print(f'Sending: seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
             # Wait for ack for the fin message
             try:
                 clientSocket.settimeout(0.5)
@@ -162,7 +162,6 @@ def client():  # Function for all client methods
             msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
             sender_window.append(msg)
             seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
-            print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
         while True:
             # If there is no more data left to read, or there is no more packets in the sender window
@@ -176,18 +175,17 @@ def client():  # Function for all client methods
                     continue  # Hop over the first round in the for-loop, which means that we drop the first packet
                 clientSocket.sendto(sender_window[i], (serverName, serverPort))  # Send packet to server
                 seq, ack, flags, win = parse_header(sender_window[i][:12])
-                print("Sent packet nr " + str(seq))
+                print(f'Sending: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}') # Print paackets being sent
 
             #  Receives acks from server, puts in array
             ack_window = []  # Ack window for the received acks
-            print("Ack window:")
             for i in range(len(sender_window)):
                 try:
                     clientSocket.settimeout(0.5)  # If we dont recv a packet in 0.5seconds it will go to the except
                     ack = clientSocket.recv(12)
                     ack_window.append(ack)  # Add the received ack into the ack window
                     seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
-                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                    print(f'Receive: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                 except socket.timeout:
                     break  # If it times out we break
 
@@ -199,8 +197,6 @@ def client():  # Function for all client methods
                 if not sender_window:  # If sender window is empty break out, and dont check anymore
                     break
                 message = sender_window[0]  # First packet in the sender window
-                print("length_ack: " + str(len(ack_window)))
-                print("length_sender: " + str(len(sender_window)))
 
                 ack_seq, ack_ack, ack_flags, ack_win = parse_header(ack[:12])  # Parse the header for the ack window
                 seq, ack, flags, win = parse_header(message[:12])  # Parse the first packet in the sender window
@@ -209,7 +205,7 @@ def client():  # Function for all client methods
                     del sender_window[0]  # We delete the packet in the sender window, that got the ack back
                     i = 0  # Make the loop go again by restarting the i value to 0
                     data = f.read(1460)  # Read the next 1460 bytes
-                    if not data:  # If there is no more data, dont read and continue the "while i < (len(ack_window)):"
+                    if not data:  # If there is no more data, don't read and continue the "while i < (len(ack_window)):"
                         continue
                     # Create the next packet
                     sequence_number = counter
@@ -221,8 +217,6 @@ def client():  # Function for all client methods
                     # Create packet, add it to the sender window, that will be resent again later
                     msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
                     sender_window.append(msg)
-                    seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
-                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
                 i += 1  # Increase the i value, if sender_window[0] did not match the previous one in ack_window[i]
 
@@ -238,6 +232,7 @@ def client():  # Function for all client methods
         # Sends a fin message, and waits for the ack:fin from the server, if not it resends
         while True:
             clientSocket.sendto(msg, (serverName, serverPort))
+            print(f'Sending: seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
             # Wait for ack for the fin message
             try:
                 clientSocket.settimeout(0.5)
@@ -278,8 +273,6 @@ def client():  # Function for all client methods
             # Create packet and add to the sender window
             msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
             sender_window.append(msg)
-            seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
-            print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
         while True:  # Go through this loop until we have received all acks for all the packets we have sent
             if not sender_window:  # If there are no more packets in the sender window, we are done
@@ -290,16 +283,18 @@ def client():  # Function for all client methods
                     dropSequence = False  # Make it false so we dont skio the rest of the packets
                     continue  # Continue on next loop
                 clientSocket.sendto(sender_window[i], (serverName, serverPort))  # Send packet to server
+                seq, ack, flags, win = parse_header(sender_window[i][:12])  # parsing packet header
+                print(f'Sending: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
             #  Receives acks from server, puts in ack list
             ack_window = []
             for i in range(len(sender_window)):
                 try:
-                    clientSocket.settimeout(0.5)  # Set time out for the receive
+                    clientSocket.settimeout(0.5)  # Set time out for the reception
                     ack = clientSocket.recv(12)
                     ack_window.append(ack)  # Add to the ack window, where we will compare with the sender window later
                     seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
-                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                    print(f'Receive: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                 except socket.timeout:  # If it times out, wait for recv again
                     continue
                 except socket.error:  # If socket error, wait for recv again
@@ -314,9 +309,6 @@ def client():  # Function for all client methods
                         break
                     message = sender_window[0]
 
-                    print("length_ack: " + str(len(ack_window)))
-                    print("length_sender: " + str(len(sender_window)))
-
                     ack_seq, ack_ack, ack_flags, ack_win = parse_header(ack[:12])
                     seq, ack, flags, win = parse_header(message[:12])
 
@@ -324,8 +316,7 @@ def client():  # Function for all client methods
                     if seq == ack_ack:
                         del sender_window[0]  # Delete the packet that has gotten the ack
                         data = f.read(1460)  # Read 1460 more bytes from file
-                        if not data:  # If no more data, dont do anything else
-                            print("No more data")
+                        if not data:  # If no more data, don't do anything else
                             break
                         # If there is more data to read, add it to a packet, and put it in new window list
                         sequence_number = counter
@@ -335,29 +326,21 @@ def client():  # Function for all client methods
                         counter += 1
                         msg = create_packet(sequence_number, acknowledgement_number, flags, window, data)
                         new_window.append(msg)
-                        print("Ny vindu er " + str(len(new_window)))
-                        seq, ack, flags, win = parse_header(msg[:12])  # it's an ack message with only the header
-                        print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
                     # Or if we cannot find the ack for the packet, put it in rest window
                     elif j == len(ack_window) - 1:
                         rest_window.append(sender_window[0])  # Put the packet in rest window
-                        print("Seq ikke sendt " + str(seq))
                         del sender_window[0]  # Deleted from sender window
 
             if rest_window:  # If there is still something in rest window
                 # Copy the rest window to sender window, sender window is now the same as rest window
                 sender_window = rest_window.copy()
-                print("Kopierer rest")
                 rest_window = []  # Empty rest window for later use
 
             # If there is no more in rest window and sender window, then turn sender window into new window
             elif new_window and not sender_window:
                 sender_window = new_window.copy()
-                print("Kopierer new")
                 new_window = []  # Then empty new dinwo for later use
-
-            print("Sender vindu er " + str(len(sender_window)))
 
             # Repeat until there is no more data left to read, and all the windows are empty
 
@@ -373,6 +356,7 @@ def client():  # Function for all client methods
         # Send a fin packet, waits for a response, if there is no response it will send again
         while True:
             clientSocket.sendto(msg, (serverName, serverPort))
+            print(f'Sending: seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
             # Wait for ack for the fin message
             try:
                 clientSocket.settimeout(0.5)
@@ -405,6 +389,7 @@ def handshake_client(serverName, serverPort, clientSocket):
     addr = (serverName, serverPort)
 
     clientSocket.sendto(msg, addr)  # Sends syn packet to server
+    print(f'Sending: seq={sequence_number}, ack={acknowledgment_number}, flags={flags}, receiver-window={window}')
 
     try:
         clientSocket.settimeout(0.5)  # Waits for a response for 0.5 seconds
@@ -416,9 +401,8 @@ def handshake_client(serverName, serverPort, clientSocket):
 
     header_from_ack = ack[:12]
     seq, ack, flags, win = parse_header(header_from_ack)
-    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+    print(f'Receive: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
     syn, ack, fin = parse_flags(flags)
-    print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
     if syn == 8 and ack == 4:  # If it is the right value for the syn ack, we make an ack for the syn ack
         # Creating an ack packet for the syn ack we received
         sequence_number = 0
@@ -432,6 +416,7 @@ def handshake_client(serverName, serverPort, clientSocket):
 
         addr = (serverName, serverPort)
         clientSocket.sendto(msg, addr)  # Send it to server
+        print(f'Sending: seq={sequence_number}, ack={acknowledgment_number}, flags={flags}, receiver-window={window}')
 
         print("Connection established with server")  # Print connection established
         print("----------------------------------")  # And sent back an ack to receiver
@@ -460,11 +445,11 @@ def server():  # Function for all server methods
             counter = 1  # Tracking variable to check for the right sequence number for the packets
             while data:  # While there is data left to receive
                 seq, ack, flags, win = parse_header(data[:12])  # Parse the header of the packet
-                print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                print(f'Receive: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                 syn, ack, fin = parse_flags(flags)  # Parse the flags in the header
                 if fin == 2:  # When we get the fin message, we break out of the data loop
                     break
-                if seq == counter and not dropAck:  # When we get the right counter and we dont need to drop an ack
+                if seq == counter and not dropAck:  # When we get the right counter, and we don't need to drop an ack
                     # We create the ack for the packet and send it to client
                     sequence_number = 0
                     acknowledgment_number = seq
@@ -474,8 +459,8 @@ def server():  # Function for all server methods
                     data = b''
 
                     ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                    print(f'Sending: seq={sequence_number}, ack={acknowledgment_number}, flags={flags}, receiver-window={window}') # Printing out ack that is being sent
 
-                    print("Det funker")
                     serverSocket.sendto(ack, addr)  # Send to client
                     counter += 1  # Increase counter for the next packets
 
@@ -488,11 +473,12 @@ def server():  # Function for all server methods
                     data = b''
 
                     ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                    print(f'Sending: seq={sequence_number}, ack={acknowledgment_number}, flags={flags}, receiver-window={window}')  # Printing out ack that is being sent
                     serverSocket.sendto(ack, addr)
                 elif seq != counter:  # If the sequence number of the packet is not right, keep going
                     print("Not the right packet received")
                     print(str(counter))
-                if dropAck:  # If dropack, drop the first ack, then make it false so we dont drop any other acks
+                if dropAck:  # If dropack, drop the first ack, then make it false so we don't drop any other acks
                     dropAck = False
 
                 data, addr = serverSocket.recvfrom(1472)  # Receive next packet from client
@@ -506,7 +492,7 @@ def server():  # Function for all server methods
             ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
             serverSocket.sendto(ack, addr)  # Send ack
             seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
-            print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+            print(f'Sending: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
             end_time = time.time()  # End time value
 
@@ -534,7 +520,7 @@ def server():  # Function for all server methods
                     serverSocket.settimeout(0.5)  # Timeout for 0.5 seconds
                     data, addr = serverSocket.recvfrom(1472)  # Receive packet
                     seq, ack, flags, win = parse_header(data[:12])  # Parse header
-                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                    print(f'Receive: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                     syn, ack, fin = parse_flags(flags)  # Parse flags
                     if fin == 2:  # If fin packet is received break out
                         break
@@ -547,7 +533,6 @@ def server():  # Function for all server methods
 
                 seq, ack, flags, win = parse_header(data[:12])
                 syn, ack, fin = parse_flags(flags)
-                print(fin)
                 # If expected sequence number, write to file
                 # If a packet is skipped, the next packet will not be used to write to file
                 # Even if the packet is wrong, the server will still send an ack so that the client understands which
@@ -565,7 +550,7 @@ def server():  # Function for all server methods
                 ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
                 serverSocket.sendto(ack, addr)  # Send ack to client for the packet
                 seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
-                print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                print(f'Sending: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
             # Create ack for fin
             sequence_number = 0
@@ -576,7 +561,7 @@ def server():  # Function for all server methods
             ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
             serverSocket.sendto(ack, addr)  # Send to ack for fin client
             seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
-            print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+            print(f'Sending: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
             end_time = time.time()  # End time
 
@@ -607,7 +592,7 @@ def server():  # Function for all server methods
                     serverSocket.settimeout(0.5)  # Set timout to 0.5 seconds
                     data, addr = serverSocket.recvfrom(1472)  # Receive packet
                     seq, ack, flags, win = parse_header(data[:12])  # Parse header
-                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                    print(f'Receive: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                     syn, ack, fin = parse_flags(flags)  # Parse flags
                     if fin == 2:  # If we get the fin packet, then break out of while True
                         break
@@ -623,7 +608,6 @@ def server():  # Function for all server methods
                     if seq == tracker:
                         f.write(data[12:])
                         tracker += 1
-                        print("Tracker lik " + str(tracker))
 
                     # If seq is not the expected value ( same as tracker )
                     elif seq != tracker:
@@ -639,7 +623,7 @@ def server():  # Function for all server methods
                     ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
                     serverSocket.sendto(ack, addr)
                     seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
-                    print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+                    print(f'Sending: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                 except socket.timeout:  # If we do not receive in time, continue and receive again
                     continue
 
@@ -649,12 +633,10 @@ def server():  # Function for all server methods
             # We have all the packets we need to recreate the image in the storage, because of the acks we sent
             while lastCheck < len(storage):
                 seq, ack, flags, win = parse_header(storage[lastCheck][:12])  # it's an ack message with only the header
-                print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
                 if tracker == seq:
                     f.write(storage[lastCheck][12:])  # Write to fike
                     del storage[lastCheck]  # Delete the one we wrote to file
                     tracker += 1  # Increase tracker for next packet
-                    print("Tracker storage " + str(len(storage)))
                     lastCheck = -1
                 lastCheck += 1  # Increase each time. We go through the whole storage to find the right sequence number
 
@@ -667,7 +649,7 @@ def server():  # Function for all server methods
             ack = create_packet(sequence_number, acknowledgment_number, flags, window, data)
             serverSocket.sendto(ack, addr)  # Send to client
             seq, ack, flags, win = parse_header(ack[:12])  # it's an ack message with only the header
-            print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+            print(f'Sending: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
 
             end_time = time.time()  # Set end time
 
@@ -694,9 +676,8 @@ def handshake_server(serverSocket, serverPort):
         receiveMessage, client_address = serverSocket.recvfrom(12)  # Receive syn first from client
         header_from_receive = receiveMessage[:12]
         seq, ack, flags, win = parse_header(header_from_receive)  # Parse the header
-        print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+        print(f'Receive: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
         syn, ack, fin = parse_flags(flags)  # Parse the flags
-        print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
     except socket.timeout:
         print("Connection Error: Something went wrong when connecting to the client, please try again")
         serverSocket.close()  # If not received in time, we close the socket
@@ -712,6 +693,7 @@ def handshake_server(serverSocket, serverPort):
 
         msg = create_packet(sequence_number, acknowledgment_number, flags, window, data)
         serverSocket.sendto(msg, client_address)  # Send syn ack to client
+        print(f'Sending: seq={sequence_number}, ack={acknowledgment_number}, flags={flags}, receiver-window={window}')
     else:
         print("Did not receive syn and ack") # If we did not receive the right values, we print an error message
         serverSocket.close()  # If not received in time, we close the socket
@@ -721,9 +703,8 @@ def handshake_server(serverSocket, serverPort):
         serverSocket.settimeout(0.5) # Timeout for 0.5 seconds
         last_ack = serverSocket.recv(12) # Then we receive the ack for the syn ack
         seq, ack, flags, win = parse_header(last_ack) # Parse header
-        print(f'seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
+        print(f'Receive: seq={seq}, ack={ack}, flags={flags}, receiver-window={win}')
         syn, ack, fin = parse_flags(flags)  # Parse flags
-        print(f'syn_flag = {syn}, fin_flag={fin}, and ack_flag={ack}')
     except socket.timeout:  # If timeout
         print("Connection Error: Something went wrong when connecting to the client, please try again")
         serverSocket.close()  # Close gracefully
@@ -834,7 +815,4 @@ elif args.client:
 # Run server when -s or --server is used
 elif args.server:
     server()
-
-# READ.ME
-# Ta vekk print?
 
