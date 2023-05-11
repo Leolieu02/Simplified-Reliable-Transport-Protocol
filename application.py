@@ -102,9 +102,11 @@ def client():  # Function for all client methods
                         ack_wait = False  # Jump out of while ack_wait
                     elif ack != sequence_number:  # If you get wrong ack number
                         clientSocket.sendto(msg, (serverName, serverPort))  # Resend packet
+                        print(f'Sending: seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
                 except socket.timeout:  # If timer runs out, resend (timeout resend)
                     ack_wait = True
                     clientSocket.sendto(msg, (serverName, serverPort))  # Resend packet
+                    print(f'Sending: seq={sequence_number}, ack={acknowledgement_number}, flags={flags}, receiver-window={window}')
 
             data = f.read(1460)  # When the packet is sent, read the next 1460 bytes and send again.
             i += 1 # Received an ack for this packet, now update the next packet number
