@@ -24,6 +24,9 @@ followed by one of the reliability functions. Here you will be able to choose be
 *Stop-And-Wait*, *Go-Back-N* and *Selective repeat*. Down below will be a list of 
 how to run each of them and a small description of what they do
 
+**Note**: If you do not run it from the source folder, you can run in with the path to
+the program, e.g. `python3 source/application.py -s -r SAW`
+
 ## How to use the reliability functions
 
 - **Stop-And-Wait**. For this you will need to write `-r SAW` when running the application. 
