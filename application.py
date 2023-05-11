@@ -477,7 +477,6 @@ def server():  # Function for all server methods
                     serverSocket.sendto(ack, addr)
                 elif seq != counter:  # If the sequence number of the packet is not right, keep going
                     print("Not the right packet received")
-                    print(str(counter))
                 if dropAck:  # If dropack, drop the first ack, then make it false so we don't drop any other acks
                     dropAck = False
 
