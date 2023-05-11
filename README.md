@@ -58,19 +58,15 @@ client side needs to be done by `-t dropseq`. **You will not be able to use the
 dropseq option with the Stop-And-Wait**.
 
 ## Arguments
-    -h, --help            show this help message and exit
-    -s, --server          Starts a server
-    -c, --client          Starts a client
-    -p PORT, --port PORT  Choose port number
-    -i IPADDRESS, --ipaddress IPADDRESS
-    Choose an IP address for connection
-    -r {SAW,GBN,GBN-SR}, --reliability {SAW,GBN,GBN-SR}
-    Choose a reliability function to use for connection
-    -f FILE, --file FILE  Choose a file to send
-    -w WINDOW, --window WINDOW
-    Choose the window size 5, 10 or 15 (only for GBN or GBN-SR)
-    -t TESTCASE, --testcase TESTCASE
-    Choose test case
+    -h, --help                                             show this help message and exit
+    -s, --server                                           Starts a server
+    -c, --client                                           Starts a client
+    -p PORT, --port PORT                                   Choose port number
+    -i IPADDRESS, --ipaddress IPADDRESS                    Choose an IP address for connection
+    -r {SAW,GBN,GBN-SR}, --reliability {SAW,GBN,GBN-SR}    Choose a reliability function to use for connection
+    -f FILE, --file FILE                                   Choose a file to send
+    -w WINDOW, --window WINDOW                             Choose the window size 5, 10 or 15 (only for GBN or GBN-SR)
+    -t TESTCASE, --testcase TESTCASE                       Choose test case
 
 ## Running the application with examples
 - `python3 application.py -s -r SAW` - This will run the program in server mode with
