@@ -502,6 +502,7 @@ def server():  # Function for all server methods
             print("Total duration of the transfer was " + str(round(duration, 2)))  # Print duration
 
             f.close()  # Close f
+            serverSocket.close()
             print("----------------------------")
             print("Connection gracefully closed")
 
